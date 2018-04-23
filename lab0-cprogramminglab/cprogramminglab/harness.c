@@ -31,8 +31,8 @@
   next and prev pointers at beginning
 */
 
-
-typedef struct BELE {
+typedef struct BELE
+{
     struct BELE *next;
     struct BELE *prev;
     size_t payload_size;
@@ -58,13 +58,13 @@ static jmp_buf env;
 static volatile sig_atomic_t jmp_ready = false;
 static bool time_limited = false;
 
-
 /*
   Internal functions
  */
 /* Should this allocation fail? */
-static bool fail_allocation() {
-    double weight = (double) random() / RAND_MAX;
+static bool fail_allocation()
+{
+    double weight = (double)random() / RAND_MAX;
     return (weight < 0.01 * fail_probability);
 }
 
@@ -72,107 +72,117 @@ static bool fail_allocation() {
   Find header of block, given its payload.
   Signal error if doesn't seem like legitimate block
  */
-static block_ele_t *find_header(void *p) {
-    if (p == NULL) {
-	report_event(MSG_ERROR, "Attempting to free null block");
-	error_occurred = true;
+static block_ele_t *find_header(void *p)
+{
+    if (p == NULL)
+    {
+        report_event(MSG_ERROR, "Attempting to free null block");
+        error_occurred = true;
     }
-    block_ele_t *b = (block_ele_t *) ((size_t) p - sizeof(block_ele_t));
-    if (cautious_mode) {
-	/* Make sure this is really an allocated block */
-	block_ele_t *ab = allocated;
-	bool found = false;
-	while (ab && !found) {
-	    found = ab == b;
-	    ab = ab->next;
-	}
-	if (!found) {
-	    report_event(MSG_ERROR, "Attempted to free unallocated block.  Address = %p", p);
-	    error_occurred = true;
-	}
+    block_ele_t *b = (block_ele_t *)((size_t)p - sizeof(block_ele_t));
+    if (cautious_mode)
+    {
+        /* Make sure this is really an allocated block */
+        block_ele_t *ab = allocated;
+        bool found = false;
+        while (ab && !found)
+        {
+            found = ab == b;
+            ab = ab->next;
+        }
+        if (!found)
+        {
+            report_event(MSG_ERROR, "Attempted to free unallocated block.  Address = %p", p);
+            error_occurred = true;
+        }
     }
-    if (b->magic_header != MAGICHEADER) {
-	report_event(MSG_ERROR, "Attempted to free unallocated or corrupted block.  Address = %p", p);
-	error_occurred = true;
+    if (b->magic_header != MAGICHEADER)
+    {
+        report_event(MSG_ERROR, "Attempted to free unallocated or corrupted block.  Address = %p", p);
+        error_occurred = true;
     }
     return b;
 }
 
 /* Given pointer to block, find its footer */
-static size_t *find_footer(block_ele_t *b) {
-    size_t *p = (size_t *) ((size_t) b + b->payload_size + sizeof(block_ele_t));
+static size_t *find_footer(block_ele_t *b)
+{
+    size_t *p = (size_t *)((size_t)b + b->payload_size + sizeof(block_ele_t));
     return p;
 }
-
 
 /*
   Implementation of application functions
  */
 void *test_malloc(size_t size)
 {
-    if (fail_allocation()) {
-	report_event(MSG_WARN, "Malloc returning NULL");
-	return NULL;
+    if (fail_allocation())
+    {
+        report_event(MSG_WARN, "Malloc returning NULL");
+        return NULL;
     }
     block_ele_t *new_block = malloc(size + sizeof(block_ele_t) + sizeof(size_t));
-    if (new_block == NULL) {
-	report_event(MSG_FATAL, "Couldn't allocate any more memory");
-	error_occurred = true;
+    if (new_block == NULL)
+    {
+        report_event(MSG_FATAL, "Couldn't allocate any more memory");
+        error_occurred = true;
     }
     new_block->magic_header = MAGICHEADER;
     new_block->payload_size = size;
     *find_footer(new_block) = MAGICFOOTER;
-    void *p = (void *) &new_block->payload;
+    void *p = (void *)&new_block->payload;
     memset(p, FILLCHAR, size);
     new_block->next = allocated;
     new_block->prev = NULL;
     if (allocated)
-	allocated->prev = new_block;
+        allocated->prev = new_block;
     allocated = new_block;
-    allocated_count ++;
+    allocated_count++;
     return p;
 }
 
 void test_free(void *p)
 {
-    if (p == NULL) {
-	report(MSG_ERROR, "Attempt to free NULL");
-	error_occurred = true;
-	return;
+    if (p == NULL)
+    {
+        report(MSG_ERROR, "Attempt to free NULL");
+        error_occurred = true;
+        return;
     }
     block_ele_t *b = find_header(p);
     size_t footer = *find_footer(b);
-    if (footer != MAGICFOOTER) {
-	report_event(MSG_ERROR,
-		     "Corruption detected in block with address %p when attempting to free it", p);
-	error_occurred = true;
+    if (footer != MAGICFOOTER)
+    {
+        report_event(MSG_ERROR,
+                     "Corruption detected in block with address %p when attempting to free it", p);
+        error_occurred = true;
     }
     b->magic_header = MAGICFREE;
     *find_footer(b) = MAGICFREE;
     memset(p, FILLCHAR, b->payload_size);
-    
+
     /* Unlink from list */
     block_ele_t *bn = b->next;
     block_ele_t *bp = b->prev;
     if (bp)
-	bp->next = bn;
-    else 
-	allocated = bn;
+        bp->next = bn;
+    else
+        allocated = bn;
     if (bn)
-	bn->prev = bp;
+        bn->prev = bp;
 
     free(b);
-    allocated_count --;
+    allocated_count--;
 }
 
-size_t allocation_check() {
+size_t allocation_check()
+{
     return allocated_count;
 }
 
 /*
   Implementation of functions for testing
  */
-
 
 /*
   Set/unset cautious mode.
@@ -186,7 +196,8 @@ void set_cautious_mode(bool cautious)
 /*
   Return whether any errors have occurred since last time set error limit
  */
-bool error_check() {
+bool error_check()
+{
     bool e = error_occurred;
     error_occurred = false;
     return e;
@@ -196,51 +207,60 @@ bool error_check() {
  * Prepare for a risky operation using setjmp.
  * Function returns true for initial return, false for error return
  */
-bool exception_setup(bool limit_time) {
-    if (sigsetjmp(env, 1)) {
-	/* Got here from longjmp */
-	jmp_ready = false;
-	if (time_limited) {
-	    alarm(0);
-	    time_limited = false;
-	}
-	if (error_message) {
-	    report_event(MSG_ERROR, error_message);
-	}
-	error_message = "";
-	return false;
-    } else {
-	/* Got here from initial call */
-	jmp_ready = true;
-	if (limit_time) {
-	    alarm(time_limit);
-	    time_limited = true;
-	}
-	return true;
+bool exception_setup(bool limit_time)
+{
+    if (sigsetjmp(env, 1))
+    {
+        /* Got here from longjmp */
+        jmp_ready = false;
+        if (time_limited)
+        {
+            alarm(0);
+            time_limited = false;
+        }
+        if (error_message)
+        {
+            report_event(MSG_ERROR, error_message);
+        }
+        error_message = "";
+        return false;
+    }
+    else
+    {
+        /* Got here from initial call */
+        jmp_ready = true;
+        if (limit_time)
+        {
+            alarm(time_limit);
+            time_limited = true;
+        }
+        return true;
     }
 }
 
 /*
  * Call once past risky code
  */
-void exception_cancel() {
-    if (time_limited) {
-	alarm(0);
-	time_limited = false;
+void exception_cancel()
+{
+    if (time_limited)
+    {
+        alarm(0);
+        time_limited = false;
     }
     jmp_ready = false;
     error_message = "";
 }
 
-
 /*
  * Use longjmp to return to most recent exception setup
  */
-void trigger_exception(char *msg) {
+void trigger_exception(char *msg)
+{
     error_occurred = true;
     error_message = msg;
     if (jmp_ready)
-	siglongjmp(env, 1);
+        siglongjmp(env, 1);
     else
-	exit(1);
+        exit(1);
 }
