@@ -29,7 +29,7 @@ bool q_insert_head(queue_t *q, int v)
 	    item->next = q->head;
 	    if (q->head == NULL) {
 	    	q->last = item;
-	    } else
+	    }
 	    q->head = item;
 	    q->size += 1;
 
@@ -63,25 +63,29 @@ bool q_remove_head(queue_t *q, int *vp)
 		return false;
 	} else {
 		list_ele_t* target = q->head;
+		*vp = target->value;
 
+		q->head = target->next;
+		q->size -= 1;
+
+		free(target);
+
+		return true;
 	}
 }
 
 void q_free(queue_t *q)
 {
-	if (q == NULL || q->head->next == q->last)
-	{
-		return;
-	}
-	list_elem_t *current = q->head->next;
-	q->head->next = q->last;
-
-	list_elem_t *target = NULL;
-	while (current != q->last)
-	{
-		target = current;
-		current = current->next;
-		free(target);
+	if (q == NULL || q->head == NULL) {
+		return ;
+	} else {
+		list_ele_t* current = q->head;
+		while (current != NULL) {
+			q->head = current->next;
+			free(current);
+			q->size -= 1;
+			current = q->head;
+		}
 	}
 	free(q);
 }
@@ -100,24 +104,20 @@ int q_size(queue_t *q)
 
 void q_reverse(queue_t *q)
 {
-	if (q == NULL || q->head == NULL)
-	{
+	if (q == NULL || q->head == NULL) {
 		return;
-	}
-	else
-	{
-		list_elem_t *items = q->head->next;
-		q->head->next = q->last;
+	} else {
+		q->last = q->head;
+		q->head->next = NULL;
+		list_ele_t* items = q->head->next;
 
-		list_elem_t *target = NULL;
-		while (items != q->last)
-		{
-			target = items;
+		list_ele_t* current = NULL;
+		while (items != NULL) {
+			current = items;
 			items = items->next;
 
-			target->next = q->head->next;
-
-			q->head->next = target;
+			current->next = q->head;
+			q->head = current;
 		}
 	}
 }
@@ -136,13 +136,13 @@ int main()
 		printf("remove failed\n");
 	}
 
-	q_insert_head(q, 5);
-	q_insert_head(q, 4);
+	q_insert_head(q, 1);
+	q_insert_head(q, 2);
 
-	q_insert_tail(q, 6);
-	q_insert_tail(q, 1);
-	list_elem_t *cursor = q->head->next;
-	while (cursor != q->last)
+	q_insert_tail(q, 3);
+	q_insert_tail(q, 4);
+	list_ele_t *cursor = q->head;
+	while (cursor != NULL)
 	{
 		printf("%d ", cursor->value);
 		cursor = cursor->next;
@@ -156,8 +156,8 @@ int main()
 	printf("current size of list is: %d\n", q->size);
 
 	q_reverse(q);
-	cursor = q->head->next;
-	while (cursor != q->last)
+	cursor = q->head;
+	while (cursor != NULL)
 	{
 		printf("%d ", cursor->value);
 		cursor = cursor->next;
@@ -165,6 +165,7 @@ int main()
 	printf("\n");
 
 	q_free(q);
+	free(vp);
 
 	return 0;
 }
