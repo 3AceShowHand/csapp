@@ -28,11 +28,9 @@ queue_t *q_new()
     {
         return NULL;
     }
-    q->head = malloc(sizeof(list_ele_t));
-    q->last = malloc(sizeof(list_ele_t));
-    q->head->next = q->last;
+    q->head = NULL;
+    q->last = NULL;
     q->size = 0;
-
     return q;
 }
 
@@ -40,22 +38,23 @@ queue_t *q_new()
 
 void q_free(queue_t *q)
 {
-    if (q == NULL || q->head->next == q->last)
+    if (q == NULL || q->head == NULL)
     {
         return;
     }
-    list_ele_t *current = q->head->next;
-    q->head->next = q->last;
-
-    list_ele_t *target = NULL;
-    while (current != q->last)
+    else
     {
-        target = current;
-        current = current->next;
-        free(target);
+        q->last = q->head;
+        list_ele_t *current = q->head;
+        while (current != NULL)
+        {
+            q->head = current->next;
+            free(current);
+            q->size -= 1;
+            current = q->head;
+        }
     }
     free(q);
-
 }
 
 /*
@@ -77,9 +76,14 @@ bool q_insert_head(queue_t *q, int v)
             return false;
         }
         item->value = v;
-        item->next = q->head->next;
-        q->head->next = item;
+        item->next = q->head;
+        if (q->head == NULL)
+        {
+            q->last = item;
+        }
+        q->head = item;
         q->size += 1;
+
         return true;
     }
 }
@@ -102,15 +106,20 @@ bool q_insert_tail(queue_t *q, int v)
         {
             return false;
         }
-        q->last->value = v;
-        q->last->next = item;
+        item->value = v;
         item->next = NULL;
+        if (q->head == NULL)
+        {
+            q->head = item;
+        }
+        else
+        {
+            q->last->next = item;
+        }
         q->last = item;
         q->size += 1;
-
         return true;
     }
-
 }
 
 /*
@@ -123,16 +132,18 @@ bool q_insert_tail(queue_t *q, int v)
 
 bool q_remove_head(queue_t *q, int *vp)
 {
-    if (q == NULL || q->head->next == q->last)
+    if (q == NULL || q->head == NULL)
     {
         return false;
     }
     else
     {
-        list_ele_t *target = q->head->next;
+        list_ele_t *target = q->head;
         *vp = target->value;
-        q->head->next = target->next;
+
+        q->head = target->next;
         q->size -= 1;
+
         free(target);
 
         return true;
@@ -146,7 +157,7 @@ bool q_remove_head(queue_t *q, int *vp)
 
 int q_size(queue_t *q)
 {
-    if (q == NULL || q->head->next == q->last)
+    if (q == NULL || q->head == NULL)
     {
         return 0;
     }
@@ -154,7 +165,6 @@ int q_size(queue_t *q)
     {
         return q->size;
     }
-
 }
 
 /*

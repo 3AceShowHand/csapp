@@ -48,8 +48,12 @@ bool q_insert_tail(queue_t *q, int v)
 			return false;
 		}
 		item->value = v;
-		item->next = q->last->next;
-		q->last->next = item;
+		item->next = NULL;
+		if (q->head == NULL) {
+			q->head = item;
+		} else {
+			q->last->next = item;
+		}
 		q->last = item;
 		q->size += 1;
 		return true;
@@ -79,6 +83,7 @@ void q_free(queue_t *q)
 	if (q == NULL || q->head == NULL) {
 		return ;
 	} else {
+		q->last = q->head;
 		list_ele_t* current = q->head;
 		while (current != NULL) {
 			q->head = current->next;
@@ -107,18 +112,17 @@ void q_reverse(queue_t *q)
 	if (q == NULL || q->head == NULL) {
 		return;
 	} else {
-		q->last = q->head;
-		q->head->next = NULL;
 		list_ele_t* items = q->head->next;
+		q->last = q->head;
 
 		list_ele_t* current = NULL;
 		while (items != NULL) {
 			current = items;
 			items = items->next;
-
 			current->next = q->head;
 			q->head = current;
 		}
+		q->last->next = NULL;
 	}
 }
 
@@ -136,8 +140,8 @@ int main()
 		printf("remove failed\n");
 	}
 
-	q_insert_head(q, 1);
-	q_insert_head(q, 2);
+	q_insert_tail(q, 1);
+	q_insert_tail(q, 2);
 
 	q_insert_tail(q, 3);
 	q_insert_tail(q, 4);
