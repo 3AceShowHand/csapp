@@ -4,6 +4,7 @@ typedef struct ELE
 {
   int value;
   struct ELE *next;
+
 } list_ele_t;
 
 typedef struct

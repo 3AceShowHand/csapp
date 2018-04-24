@@ -9,11 +9,9 @@ queue_t *q_new()
 	{
 		return NULL;
 	}
-	q->head = malloc(sizeof(list_elem_t));
-	q->last = malloc(sizeof(list_elem_t));
-	q->head->next = q->last;
-	q->size = 0;
-
+	q->head = NULL;
+	q->last = NULL;
+    q->size = 0;
 	return q;
 }
 
@@ -22,20 +20,20 @@ bool q_insert_head(queue_t *q, int v)
 	if (q == NULL)
 	{
 		return false;
-	}
-	else
-	{
-		list_elem_t *item = malloc(sizeof(list_elem_t));
-		if (item == NULL)
-		{
-			return false;
-		}
-		item->value = v;
-		item->next = q->head->next;
-		q->head->next = item;
-		q->size += 1;
+	} else {
+	    list_ele_t* item = malloc(sizeof(list_ele_t));
+	    if (item == NULL) {
+	        return false;
+	    }
+	    item->value = v;
+	    item->next = q->head;
+	    if (q->head == NULL) {
+	    	q->last = item;
+	    } else
+	    q->head = item;
+	    q->size += 1;
 
-		return true;
+        return true;
 	}
 }
 
@@ -44,17 +42,14 @@ bool q_insert_tail(queue_t *q, int v)
 	if (q == NULL)
 	{
 		return false;
-	}
-	else
-	{
-		list_elem_t *item = malloc(sizeof(list_elem_t));
-		if (item == NULL)
-		{
+	} else {
+		list_ele_t* item = malloc(sizeof(list_ele_t));
+		if (item == NULL) {
 			return false;
 		}
-		q->last->value = v;
+		item->value = v;
+		item->next = q->last->next;
 		q->last->next = item;
-		item->next = NULL;
 		q->last = item;
 		q->size += 1;
 		return true;
@@ -63,19 +58,12 @@ bool q_insert_tail(queue_t *q, int v)
 
 bool q_remove_head(queue_t *q, int *vp)
 {
-	if (q == NULL || q->head->next == q->last)
+	if (q == NULL || q->head == NULL)
 	{
 		return false;
-	}
-	else
-	{
-		list_elem_t *target = q->head->next;
-		*vp = target->value;
-		q->head->next = target->next;
-		q->size -= 1;
-		free(target);
+	} else {
+		list_ele_t* target = q->head;
 
-		return true;
 	}
 }
 
