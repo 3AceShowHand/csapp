@@ -15,20 +15,22 @@
 /************** Data structure declarations ****************/
 
 /* Linked list element (You shouldn't need to change this) */
-typedef struct ELE {
-    int value;
-    struct ELE *next;
+typedef struct ELE
+{
+  int value;
+  struct ELE *next;
 } list_ele_t;
 
 /* Queue structure */
-typedef struct {
-    list_ele_t *head;  /* Linked list of elements */
-    /*
+typedef struct
+{
+  list_ele_t *head; /* Linked list of elements */
+  /*
       You will need to add more fields to this structure
       to efficiently implement q_size and q_insert_tail
     */
-    int size;          /* count for queue size*/
-    list_ele_t *current;    /* trace the last position */  
+  int size;         /* count for queue size*/
+  list_ele_t *last; /* trace the last position */
 } queue_t;
 
 /************** Operations on queue ************************/
