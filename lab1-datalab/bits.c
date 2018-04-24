@@ -129,7 +129,6 @@ NOTES:
  *      the correct answers.
  */
 
-
 #endif
 /* 
  * bitAnd - x&y using only ~ and | 
@@ -138,8 +137,9 @@ NOTES:
  *   Max ops: 8
  *   Rating: 1
  */
-int bitAnd(int x, int y) {
-  return 2;
+int bitAnd(int x, int y)
+{
+  return ~(~x | ~y);
 }
 /* 
  * getByte - Extract byte n from word x
@@ -149,16 +149,14 @@ int bitAnd(int x, int y) {
  *   Max ops: 6
  *   Rating: 2
  */
-int getByte(int x, int n) {
-
-
-
-
-
-
-
+int getByte(int x, int n)
+{
+  int leftShift = (3 - n) << 3;
+  x = x << leftShift;
+  int rightShift = 24;
+  x = x >> rightShift;
+  x = x & 0x000f;
   return 2;
-
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -168,7 +166,8 @@ int getByte(int x, int n) {
  *   Max ops: 20
  *   Rating: 3 
  */
-int logicalShift(int x, int n) {
+int logicalShift(int x, int n)
+{
   return 2;
 }
 /*
@@ -178,7 +177,8 @@ int logicalShift(int x, int n) {
  *   Max ops: 40
  *   Rating: 4
  */
-int bitCount(int x) {
+int bitCount(int x)
+{
   return 2;
 }
 /* 
@@ -188,7 +188,8 @@ int bitCount(int x) {
  *   Max ops: 12
  *   Rating: 4 
  */
-int bang(int x) {
+int bang(int x)
+{
   return 2;
 }
 /* 
@@ -197,7 +198,8 @@ int bang(int x) {
  *   Max ops: 4
  *   Rating: 1
  */
-int tmin(void) {
+int tmin(void)
+{
   return 2;
 }
 /* 
@@ -209,7 +211,8 @@ int tmin(void) {
  *   Max ops: 15
  *   Rating: 2
  */
-int fitsBits(int x, int n) {
+int fitsBits(int x, int n)
+{
   return 2;
 }
 /* 
@@ -220,8 +223,9 @@ int fitsBits(int x, int n) {
  *   Max ops: 15
  *   Rating: 2
  */
-int divpwr2(int x, int n) {
-    return 2;
+int divpwr2(int x, int n)
+{
+  return 2;
 }
 /* 
  * negate - return -x 
@@ -230,7 +234,8 @@ int divpwr2(int x, int n) {
  *   Max ops: 5
  *   Rating: 2
  */
-int negate(int x) {
+int negate(int x)
+{
   return 2;
 }
 /* 
@@ -240,7 +245,8 @@ int negate(int x) {
  *   Max ops: 8
  *   Rating: 3
  */
-int isPositive(int x) {
+int isPositive(int x)
+{
   return 2;
 }
 /* 
@@ -250,7 +256,8 @@ int isPositive(int x) {
  *   Max ops: 24
  *   Rating: 3
  */
-int isLessOrEqual(int x, int y) {
+int isLessOrEqual(int x, int y)
+{
   return 2;
 }
 /*
@@ -260,7 +267,8 @@ int isLessOrEqual(int x, int y) {
  *   Max ops: 90
  *   Rating: 4
  */
-int ilog2(int x) {
+int ilog2(int x)
+{
   return 2;
 }
 /* 
@@ -274,8 +282,9 @@ int ilog2(int x) {
  *   Max ops: 10
  *   Rating: 2
  */
-unsigned float_neg(unsigned uf) {
- return 2;
+unsigned float_neg(unsigned uf)
+{
+  return 2;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -286,7 +295,8 @@ unsigned float_neg(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_i2f(int x) {
+unsigned float_i2f(int x)
+{
   return 2;
 }
 /* 
@@ -300,6 +310,7 @@ unsigned float_i2f(int x) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_twice(unsigned uf) {
+unsigned float_twice(unsigned uf)
+{
   return 2;
 }
