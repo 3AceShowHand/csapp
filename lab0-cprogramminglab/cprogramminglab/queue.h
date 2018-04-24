@@ -30,7 +30,7 @@ typedef struct
       to efficiently implement q_size and q_insert_tail
     */
   int size; /* count for queue size*/
-  list_ele_t* current;
+  list_ele_t* last;
 } queue_t;
 
 /************** Operations on queue ************************/
