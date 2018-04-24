@@ -29,13 +29,8 @@ typedef struct
       You will need to add more fields to this structure
       to efficiently implement q_size and q_insert_tail
     */
-<<<<<<< HEAD
-  int size;         /* count for queue size*/
-  list_ele_t *last; /* trace the last position */
-=======
-  int size; /* count for queue size*/
-  list_ele_t* current;
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
+  int size;
+  list_ele_t* last;
 } queue_t;
 
 /************** Operations on queue ************************/

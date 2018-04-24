@@ -24,7 +24,6 @@
 queue_t *q_new()
 {
     queue_t *q = malloc(sizeof(queue_t));
-<<<<<<< HEAD
     if (q == NULL)
     {
         return NULL;
@@ -34,14 +33,6 @@ queue_t *q_new()
     q->head->next = q->last;
     q->size = 0;
 
-=======
-    /* What if malloc returned NULL? */
-	if (q == NULL) {
-		return NULL;
-	}
-    q->head = NULL;
-	q->current = NULL;
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
     return q;
 }
 
@@ -49,7 +40,6 @@ queue_t *q_new()
 
 void q_free(queue_t *q)
 {
-<<<<<<< HEAD
     if (q == NULL || q->head->next == q->last)
     {
         return;
@@ -64,15 +54,8 @@ void q_free(queue_t *q)
         current = current->next;
         free(target);
     }
-=======
-    /* How about freeing the list elements? */
-    /* Free queue structure */
-	list_ele_t* cursor;
-	for (cursor = q->head; cursor->next != NULL; cursor = cursor->next) {
-		free(cursor);
-	}
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
     free(q);
+
 }
 
 /*
@@ -82,7 +65,6 @@ void q_free(queue_t *q)
  */
 bool q_insert_head(queue_t *q, int v)
 {
-<<<<<<< HEAD
     if (q == NULL)
     {
         return false;
@@ -98,34 +80,6 @@ bool q_insert_head(queue_t *q, int v)
         item->next = q->head->next;
         q->head->next = item;
         q->size += 1;
-
-=======
-    // list_ele_t *newh;
-    // /* What should you do if the q is NULL? */
-    // newh = malloc(sizeof(list_ele_t));
-    // /* What if malloc returned NULL? */
-    // newh->value = v;
-    // newh->next = q->head;
-    // q->head = newh;
-    // return true;
-
-    if (q == NULL)
-    {
-        return false;
-    } else {
-        list_ele_t *item = malloc(sizeof(list_ele_t));
-		if (item == NULL) {
-			return false;
-		}
-        item->value = v;
-        item->next = q->head;
-        q->head = item;
-		q->size += 1;
-		while (q->current->next != NULL)
-		{
-			q->current->next = q->current->next->next;
-		}
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
         return true;
     }
 }
@@ -137,7 +91,6 @@ bool q_insert_head(queue_t *q, int v)
  */
 bool q_insert_tail(queue_t *q, int v)
 {
-<<<<<<< HEAD
     if (q == NULL)
     {
         return false;
@@ -157,26 +110,7 @@ bool q_insert_tail(queue_t *q, int v)
 
         return true;
     }
-=======
-    /* You need to write the complete code for this function */
-    /* Remember: It should operate in O(1) time */
-	if (q == NULL)
-	{
-		return false;
-	}
-	else {
-		list_ele_t* item = malloc(sizeof(list_ele_t));
-		if (item == NULL)
-		{
-			return false;
-		}
-		item->value = v;
-		item->next = NULL;
-		q->current->next = item;
-		q->size += 1;
-		return true;
-	}
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
+
 }
 
 /*
@@ -212,7 +146,6 @@ bool q_remove_head(queue_t *q, int *vp)
 
 int q_size(queue_t *q)
 {
-<<<<<<< HEAD
     if (q == NULL || q->head->next == q->last)
     {
         return 0;
@@ -221,11 +154,7 @@ int q_size(queue_t *q)
     {
         return q->size;
     }
-=======
-    /* You need to write the code for this function */
-    /* Remember: It should operate in O(1) time */
-	return q->size;
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
+
 }
 
 /*
@@ -237,7 +166,6 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-<<<<<<< HEAD
     if (q == NULL || q->head == NULL)
     {
         return;
@@ -259,7 +187,3 @@ void q_reverse(queue_t *q)
         }
     }
 }
-=======
-    /* You need to write the code for this function */
-}
->>>>>>> bb93f7229ec317bc9bf1e842d33f61d11e3c51b2
