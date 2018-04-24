@@ -129,47 +129,17 @@ void q_reverse(queue_t *q)
 int main()
 {
 	queue_t *q = q_new();
-	int *vp = malloc(sizeof(int));
-
-	if (q_remove_head(q, vp))
-	{
-		printf("remove success, the value is: %d\n", *vp);
-	}
-	else
-	{
-		printf("remove failed\n");
-	}
-
+	q_insert_head(q, 2);
+	q_insert_head(q, 1);
+	q_insert_head(q, 3);
+	q_insert_tail(q, 5);
 	q_insert_tail(q, 1);
-	q_insert_tail(q, 2);
-
-	q_insert_tail(q, 3);
-	q_insert_tail(q, 4);
-	list_ele_t *cursor = q->head;
-	while (cursor != NULL)
-	{
-		printf("%d ", cursor->value);
-		cursor = cursor->next;
-	}
-	printf("\n");
-
-	printf("the size of list is: %d\n", q->size);
-
-	q_remove_head(q, vp);
-	printf("the removed head value is %d\n", *vp);
-	printf("current size of list is: %d\n", q->size);
 
 	q_reverse(q);
-	cursor = q->head;
-	while (cursor != NULL)
-	{
-		printf("%d ", cursor->value);
-		cursor = cursor->next;
-	}
-	printf("\n");
 
-	q_free(q);
-	free(vp);
+	for (list_ele_t* cursor = q->head; cursor != NULL; cursor = cursor->next) {
+		printf("%d ", cursor->value);
+	}
 
 	return 0;
 }
