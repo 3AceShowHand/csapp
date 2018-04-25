@@ -24,26 +24,22 @@
 queue_t *q_new()
 {
     queue_t *q = malloc(sizeof(queue_t));
-    if (q == NULL)
-    {
-        return NULL;
+    if (q != NULL) {
+        q->head = NULL;
+        q->last = NULL;
+        q->size = 0;
     }
-    q->head = NULL;
-    q->last = NULL;
-    q->size = 0;
     return q;
+
 }
 
 /* Free all storage used by queue */
 
 void q_free(queue_t *q)
 {
-    if (q == NULL || q->head == NULL)
-    {
+    if (q == NULL) {
         return;
-    }
-    else
-    {
+    } else {
         q->last = q->head;
         list_ele_t *current = q->head;
         while (current != NULL)
@@ -136,18 +132,19 @@ bool q_remove_head(queue_t *q, int *vp)
     {
         return false;
     }
-    else
-    {
-        list_ele_t *target = q->head;
-        *vp = target->value;
-
-        q->head = target->next;
-        q->size -= 1;
-
-        free(target);
-
-        return true;
+    if (vp == NULL) {
+        return false;
     }
+    
+    list_ele_t *target = q->head;
+    *vp = target->value;
+
+    q->head = target->next;
+    q->size -= 1;
+
+    free(target);
+
+    return true;
 }
 
 /*
