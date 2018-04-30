@@ -153,7 +153,7 @@ int getByte(int x, int n)
 {
     int move = n << 3;
     int mask = 0xff << move;
-    return (x & mask) >> move;
+    return (x & mask) >> move & 0xff;
 }
 /* 
  * logicalShift - shift x to the right by n, using a logical shift
@@ -165,7 +165,7 @@ int getByte(int x, int n)
  */
 int logicalShift(int x, int n)
 {
-	return 2;
+    return 2;
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -177,7 +177,7 @@ int logicalShift(int x, int n)
 
 int bitCount(int x)
 {
-	return 2;
+    return 2;
 }
 /* 
  * bang - Compute !x without using !
@@ -188,7 +188,7 @@ int bitCount(int x)
  */
 int bang(int x)
 {
-	return 2;
+    return 2;
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -198,7 +198,7 @@ int bang(int x)
  */
 int tmin(void)
 {
-	return 2;
+    return 0x1 << 31;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -211,7 +211,7 @@ int tmin(void)
  */
 int fitsBits(int x, int n)
 {
-	return 2;
+    return 2;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -223,7 +223,7 @@ int fitsBits(int x, int n)
  */
 int divpwr2(int x, int n)
 {
-	return 2;
+    return 2;
 }
 /* 
  * negate - return -x 
@@ -234,7 +234,7 @@ int divpwr2(int x, int n)
  */
 int negate(int x)
 {
-	return 2;
+    return ~x + 1;
 }
 /* 
  * isPositive - return 1 if x > 0, return 0 otherwise 
@@ -245,7 +245,7 @@ int negate(int x)
  */
 int isPositive(int x)
 {
-	return 2;
+    return 2;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -256,7 +256,7 @@ int isPositive(int x)
  */
 int isLessOrEqual(int x, int y)
 {
-	return 2;
+    return 2;
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -267,7 +267,7 @@ int isLessOrEqual(int x, int y)
  */
 int ilog2(int x)
 {
-	return 2;
+    return 2;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
@@ -282,7 +282,7 @@ int ilog2(int x)
  */
 unsigned float_neg(unsigned uf)
 {
-	return 2;
+    return 2;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -295,7 +295,7 @@ unsigned float_neg(unsigned uf)
  */
 unsigned float_i2f(int x)
 {
-	return 2;
+    return 2;
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
@@ -310,5 +310,5 @@ unsigned float_i2f(int x)
  */
 unsigned float_twice(unsigned uf)
 {
-	return 2;
+    return 2;
 }
