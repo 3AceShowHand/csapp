@@ -166,7 +166,6 @@ int q_size(queue_t *q)
 
 /*
   Reverse elements in queue.
-
   Your implementation must not allocate or free any elements (e.g., by
   calling q_insert_head or q_remove_head).  Instead, it should modify
   the pointers in the existing data structure.
