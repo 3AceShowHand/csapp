@@ -165,7 +165,13 @@ int getByte(int x, int n)
  */
 int logicalShift(int x, int n)
 {
-    return 2;
+    int res = x >> n;
+    int negative1 = (~1) + 1;
+    int negativeN = (~n) + 1;
+    int move = 31 + negativeN;
+    int mask = (negative1 << move);
+    mask = ~(mask << 1);
+    return res & mask;
 }
 /*
  * bitCount - returns count of number of 1's in word
