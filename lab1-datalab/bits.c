@@ -183,7 +183,19 @@ int logicalShift(int x, int n)
 
 int bitCount(int x)
 {
-    return 2;
+    int mask1 = 0x55555555;
+    int mask2 = 0x33333333;
+    int mask3 = 0x0f0f0f0f;
+    int mask4 = 0x00ff00ff;
+    int mask5 = 0x0000ffff;
+    
+    x = (x & mask1) + ((x >> 1) & mask1);
+    x = (x & mask2) + ((x >> 2) & mask2);
+    x = (x & mask3) + ((x >> 4) & mask3);
+    x = (x & mask4) + ((x >> 8) & mask4);
+    x = (x & mask5) + ((x >> 16) & mask5);
+
+    return x;
 }
 /* 
  * bang - Compute !x without using !
@@ -251,7 +263,9 @@ int negate(int x)
  */
 int isPositive(int x)
 {
-    return 2;
+    int res = (x >> 31) + 1;
+    int mask = !!x;
+    return res & mask;
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
