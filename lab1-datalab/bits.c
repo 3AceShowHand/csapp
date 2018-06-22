@@ -183,11 +183,20 @@ int logicalShift(int x, int n)
 
 int bitCount(int x)
 {
-    int mask1 = 0x55555555;
-    int mask2 = 0x33333333;
-    int mask3 = 0x0f0f0f0f;
-    int mask4 = 0x00ff00ff;
-    int mask5 = 0x0000ffff;
+    int mask1 = 0x5 | (0x5 << 4);
+    mask1 = mask1 | (mask1 << 8);
+    mask1 = mask1 | (mask1 << 16);
+
+    int mask2 = 0x3 | (0x3 << 4);
+    mask2 = mask2 | (mask2 << 8);
+    mask2 = mask2 | (mask2 << 16);
+
+    int mask3 = 0xf | (0xf << 8);
+    mask3 = mask3 | (mask3 << 16);
+
+    int mask4 = 0xff | (0xff << 16);
+
+    int mask5 = 0xff | (0xff << 8);
 
     x = (x & mask1) + ((x >> 1) & mask1);
     x = (x & mask2) + ((x >> 2) & mask2);
@@ -206,7 +215,10 @@ int bitCount(int x)
  */
 int bang(int x)
 {
-    return 2;
+    int negativeX = (~x) + 1;
+    int temp = x | negativeX;
+    temp = temp >> 31;
+    return temp + 1;
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -229,11 +241,16 @@ int tmin(void)
  */
 int fitsBits(int x, int n)
 {
-    return 2;
+    int move = 32 + (~n) + 1;
+    int shifted = (x << move);
+    shifted = shifted >> move;
+    int result = !(x ^ shifted);
+
+    return result;
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
- *  Round toward zero
+ *  Round tow ard zero
  *   Examples: divpwr2(15,1) = 7, divpwr2(-33,4) = -2
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 15
@@ -241,7 +258,12 @@ int fitsBits(int x, int n)
  */
 int divpwr2(int x, int n)
 {
-    return 2;
+    int sign = (x >> 31) & 0x1;
+    int mask = !!n;
+    int shift = sign & mask;
+    int shiftedX = x + shift;
+    int result = shiftedX >> n;
+    return result;
 }
 /* 
  * negate - return -x 
