@@ -242,10 +242,8 @@ int tmin(void)
 int fitsBits(int x, int n)
 {
     int move = 32 + (~n) + 1;
-    int shifted = (x << move);
-    shifted = shifted >> move;
+    int shifted = (x << move) >> move;
     int result = !(x ^ shifted);
-
     return result;
 }
 /*
@@ -258,16 +256,15 @@ int fitsBits(int x, int n)
  */
 int divpwr2(int x, int n)
 {
-    int bias = (1 << n) - 1;
     int mask = x >> 31;
+    int bias = (1 << n) + (~1 + 1);
     bias = bias & mask;
-    int result = (x + bias);
-    result = result >> n;
 
-    return result;
+    return (x + bias) >> n;
 }
-/*
- * negate - return -x
+
+/* 
+ * negate - return -x 
  *   Example: negate(1) = -1.
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 5
@@ -300,9 +297,20 @@ int isPositive(int x)
  */
 int isLessOrEqual(int x, int y)
 {
-    int signX = x >> 31;
-    int signY = y >> 31;
-    int sameSign = (signX ^ signY) + 1;
+    int isEqual = !(x ^ y);
+
+    int signX = (x >> 31) & 0x1;
+    int signY = (y >> 31) & 0x1;
+    int isSameSign = !(signX ^ signY);
+
+    // should be 0 if x < y, else 1
+    int minusSign = ((x + (~y + 1)) >> 31) & 0x1;
+
+    int sameSignResult = minusSign & isSameSign;
+
+    int notSameSignResult = (isSameSign | signX) ^ isSameSign;
+
+    int result = isEqual | sameSignResult | notSameSignResult;
 
     return result;
 }
@@ -315,7 +323,13 @@ int isLessOrEqual(int x, int y)
  */
 int ilog2(int x)
 {
-    return 2;
+    int res = 0;
+    res = res + ((!!(x >> 16) << 4));
+    res = res + ((!!(x >> (8 + res))) << 3);
+    res = res + ((!!(x >> (4 + res))) << 2);
+    res = res + ((!!(x >> (2 + res))) << 1);
+    res = res + ((!!(x >> (1 + res))) << 0);
+    return res;
 }
 /*
  * float_neg - Return bit-level equivalent of expression -f for
