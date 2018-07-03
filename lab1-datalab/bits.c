@@ -323,7 +323,13 @@ int isLessOrEqual(int x, int y)
  */
 int ilog2(int x)
 {
-    return 2;
+    int res = 0;
+    res = res + ((!!(x >> 16) << 4));
+    res = res + ((!!(x >> (8 + res))) << 3);
+    res = res + ((!!(x >> (4 + res))) << 2);
+    res = res + ((!!(x >> (2 + res))) << 1);
+    res = res + ((!!(x >> (1 + res))) << 0);
+    return res;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
