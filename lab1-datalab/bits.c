@@ -258,11 +258,11 @@ int fitsBits(int x, int n)
  */
 int divpwr2(int x, int n)
 {
-    int sign = (x >> 31) & 0x1;
-    int mask = !!n;
-    int shift = sign & mask;
-    int shiftedX = x + shift;
-    int result = shiftedX >> n;
+    int mask = x >> 31;
+    int bias = (1 << n) - 1;
+    bias = bias & mask;
+
+    int result = (x + bias) >> n;
     return result;
 }
 /* 
@@ -299,7 +299,22 @@ int isPositive(int x)
  */
 int isLessOrEqual(int x, int y)
 {
-    return 2;
+    int isEqual = !(x ^ y);
+
+    int signX = (x >> 31) & 0x1;
+    int signY = (y >> 31) & 0x1;
+    int isSameSign = !(signX ^ signY);
+
+    // should be 0 if x < y, else 1
+    int minusSign = ((x - y) >> 31) & 0x1;
+
+    int sameSignResult = minusSign & isSameSign;
+
+    int notSameSignResult = (isSameSign | signX) ^ isSameSign;
+
+    int result = isEqual | sameSignResult | notSameSignResult;
+
+    return result;
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
