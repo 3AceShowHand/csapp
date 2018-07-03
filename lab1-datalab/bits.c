@@ -344,7 +344,17 @@ int ilog2(int x)
  */
 unsigned float_neg(unsigned uf)
 {
-    return 2;
+    int sign = uf & 0x80000000;
+    int e = uf & 0x7f800000;
+    int exp = e >> 23;
+    int mantissa = uf & 0x007fffff;
+
+    if ((exp == 255) && (mantissa != 0))
+    {
+        return uf;
+    }
+    unsigned result = (sign ^ 0x80000000) + e + mantissa;
+    return result;
 }
 /*
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -357,6 +367,11 @@ unsigned float_neg(unsigned uf)
  */
 unsigned float_i2f(int x)
 {
+    int sign = x & 0x80000000;
+    int e = x & 0x7f800000;
+    int exp = e >> 23;
+    int mantissa = x & 0x007fffff;
+
     return 2;
 }
 /*
