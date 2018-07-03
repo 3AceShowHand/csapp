@@ -242,10 +242,8 @@ int tmin(void)
 int fitsBits(int x, int n)
 {
     int move = 32 + (~n) + 1;
-    int shifted = (x << move);
-    shifted = shifted >> move;
+    int shifted = (x << move) >> move;
     int result = !(x ^ shifted);
-
     return result;
 }
 /* 
@@ -259,12 +257,12 @@ int fitsBits(int x, int n)
 int divpwr2(int x, int n)
 {
     int mask = x >> 31;
-    int bias = (1 << n) - 1;
+    int bias = (1 << n) + (~1 + 1);
     bias = bias & mask;
 
-    int result = (x + bias) >> n;
-    return result;
+    return (x + bias) >> n;
 }
+
 /* 
  * negate - return -x 
  *   Example: negate(1) = -1.
@@ -306,7 +304,7 @@ int isLessOrEqual(int x, int y)
     int isSameSign = !(signX ^ signY);
 
     // should be 0 if x < y, else 1
-    int minusSign = ((x - y) >> 31) & 0x1;
+    int minusSign = ((x + (~y + 1)) >> 31) & 0x1;
 
     int sameSignResult = minusSign & isSameSign;
 
