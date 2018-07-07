@@ -367,11 +367,6 @@ unsigned float_neg(unsigned uf)
  */
 unsigned float_i2f(int x)
 {
-    int sign = x & 0x80000000;
-    int e = x & 0x7f800000;
-    int exp = e >> 23;
-    int mantissa = x & 0x007fffff;
-
     return 2;
 }
 /*
@@ -387,5 +382,48 @@ unsigned float_i2f(int x)
  */
 unsigned float_twice(unsigned uf)
 {
-    return 2;
+    int sign = uf & 0x80000000;
+    int e = uf & 0x7f800000;
+    int exp = e >> 23;
+    int mantissa = uf & 0x007fffff;
+
+    // special: 11111111
+    if (exp == 255)
+    {
+        return uf;
+    }
+    // denormalized 00000000
+    else if (exp == 0)
+    {
+        // +0, -0
+        if (mantissa == 0)
+        {
+            return uf;
+        }
+        else
+        {
+            int upBound = 0x00400000;
+            if (mantissa != upBound)
+            {
+                mantissa = mantissa << 1;
+                unsigned result = sign + e + mantissa;
+                return result;
+            }
+            else
+            {
+                // exp = 0x01000000;
+                // unsigned result = sign + exp + mantissa;
+                e = 0x01000000;
+                unsigned result = sign + e + mantissa;
+                return result;
+            }
+        }
+    }
+    // normalized 00000001-11111110
+    else
+    {
+        exp = exp + 1;
+        unsigned result = sign + (exp << 23) + mantissa;
+        return result;
+    }
 }
