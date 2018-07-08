@@ -131,16 +131,13 @@ NOTES:
 
 #endif
 /*
- * bitAnd - x&y using only ~ and | 
+ * bitAnd - x&y using only ~ and |
  *   Example: bitAnd(6, 5) = 4
  *   Legal ops: ~ |
  *   Max ops: 8
  *   Rating: 1
  */
-int bitAnd(int x, int y)
-{
-    return ~(~x | ~y);
-}
+int bitAnd(int x, int y) { return ~(~x | ~y); }
 /*
  * getByte - Extract byte n from word x
  *   Bytes numbered from 0 (LSB) to 3 (MSB)
@@ -226,10 +223,7 @@ int bang(int x)
  *   Max ops: 4
  *   Rating: 1
  */
-int tmin(void)
-{
-    return 0x1 << 31;
-}
+int tmin(void) { return 0x1 << 31; }
 /*
  * fitsBits - return 1 if x can be represented as an
  *  n-bit, two's complement integer.
@@ -263,17 +257,14 @@ int divpwr2(int x, int n)
     return (x + bias) >> n;
 }
 
-/* 
- * negate - return -x 
+/*
+ * negate - return -x
  *   Example: negate(1) = -1.
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 5
  *   Rating: 2
  */
-int negate(int x)
-{
-    return ~x + 1;
-}
+int negate(int x) { return ~x + 1; }
 /*
  * isPositive - return 1 if x > 0, return 0 otherwise
  *   Example: isPositive(-1) = 0.
@@ -365,10 +356,66 @@ unsigned float_neg(unsigned uf)
  *   Max ops: 30
  *   Rating: 4
  */
+
 unsigned float_i2f(int x)
 {
-    return 2;
+    int sign = (x >> 31) & 0x1;
+
+    if (x == 0)
+    {
+        return 0;
+    }
+    else if (x == 0x80000000)
+    {
+        return 0xcf000000;
+    }
+    else
+    {
+        if (sign)
+        {
+            x = -x;
+        }
+
+        int power = 31;
+        while ((x & 0x80000000) != 0x80000000)
+        {
+            power = power - 1;
+            x = x << 1;
+        }
+
+        int mantissa;
+        if (power <= 23)
+        {
+            int mask = 0x7fffff00;
+            mantissa = x & mask;
+            mantissa = mantissa >> 9;
+        }
+        else
+        {
+            int rightMove = 32 - power;
+            int leftMove = power - 24;
+            mantissa = (x << rightMove) >> (leftMove + rightMove);
+            int lsb = mantissa & 0x1;
+            if (lsb == 0)
+            {
+                mantissa = mantissa >> 1;
+            }
+            else
+            {
+                mantissa = (mantissa + 1) >> 1;
+                if (mantissa == 0)
+                {
+                    power = power + 1;
+                }
+            }
+        }
+        int exp = (power + 127) << 23;
+
+        unsigned result = (sign << 31) + exp + mantissa;
+        return result;
+    }
 }
+
 /*
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
@@ -406,17 +453,13 @@ unsigned float_twice(unsigned uf)
             if (mantissa != upBound)
             {
                 mantissa = mantissa << 1;
-                unsigned result = sign + e + mantissa;
-                return result;
             }
             else
             {
-                // exp = 0x01000000;
-                // unsigned result = sign + exp + mantissa;
                 e = 0x01000000;
-                unsigned result = sign + e + mantissa;
-                return result;
             }
+            unsigned result = sign + e + mantissa;
+            return result;
         }
     }
     // normalized 00000001-11111110
