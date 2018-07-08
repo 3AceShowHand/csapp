@@ -360,60 +360,42 @@ unsigned float_neg(unsigned uf)
 unsigned float_i2f(int x)
 {
     int sign = (x >> 31) & 0x1;
+    unsigned result;
+    int copyX = x;
 
     if (x == 0)
     {
-        return 0;
+        result = 0;
     }
     else if (x == 0x80000000)
     {
-        return 0xcf000000;
+        result = 0xcf000000;
     }
     else
     {
         if (sign)
         {
-            x = -x;
+            copyX = -x;
         }
 
         int power = 31;
-        while ((x & 0x80000000) != 0x80000000)
+        while ((copyX & 0x80000000) != 0x80000000)
         {
             power = power - 1;
-            x = x << 1;
+            copyX = copyX << 1;
         }
 
+        int exp;
         int mantissa;
         if (power <= 23)
         {
-            int mask = 0x7fffff00;
-            mantissa = x & mask;
-            mantissa = mantissa >> 9;
         }
         else
         {
-            int rightMove = 32 - power;
-            int leftMove = power - 24;
-            mantissa = (x << rightMove) >> (leftMove + rightMove);
-            int lsb = mantissa & 0x1;
-            if (lsb == 0)
-            {
-                mantissa = mantissa >> 1;
-            }
-            else
-            {
-                mantissa = (mantissa + 1) >> 1;
-                if (mantissa == 0)
-                {
-                    power = power + 1;
-                }
-            }
         }
-        int exp = (power + 127) << 23;
-
-        unsigned result = (sign << 31) + exp + mantissa;
-        return result;
+        result = sign << 31 + exp + mantissa;
     }
+    return result;
 }
 
 /*
