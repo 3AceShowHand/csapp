@@ -359,43 +359,29 @@ unsigned float_neg(unsigned uf)
 
 unsigned float_i2f(int x)
 {
-    int sign = (x >> 31) & 0x1;
-    unsigned result;
-    int copyX = x;
-
     if (x == 0)
     {
-        result = 0;
+        return 0;
     }
     else if (x == 0x80000000)
     {
-        result = 0xcf000000;
+        return 0xcf000000;
     }
-    else
+    int sign = (x >> 31) & 0x1;
+    unsigned result;
+    int copyX = x;
+    if (sign)
     {
-        if (sign)
-        {
-            copyX = -x;
-        }
-
-        int power = 31;
-        while ((copyX & 0x80000000) != 0x80000000)
-        {
-            power = power - 1;
-            copyX = copyX << 1;
-        }
-
-        int exp;
-        int mantissa;
-        if (power <= 23)
-        {
-        }
-        else
-        {
-        }
-        result = sign << 31 + exp + mantissa;
+        copyX = -copyX;
     }
-    return result;
+    int power = 31;
+    while ((copyX & 0x80000000) != 0x80000000)
+    {
+        power -= 1;
+        copyX << 1;
+    }
+
+    int mantissa = x & ((1 << power) - 1);
 }
 
 /*
