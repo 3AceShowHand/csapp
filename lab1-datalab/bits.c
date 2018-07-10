@@ -138,6 +138,7 @@ NOTES:
  *   Rating: 1
  */
 int bitAnd(int x, int y) { return ~(~x | ~y); }
+
 /*
  * getByte - Extract byte n from word x
  *   Bytes numbered from 0 (LSB) to 3 (MSB)
@@ -152,6 +153,7 @@ int getByte(int x, int n)
     int mask = 0xff << move;
     return (x & mask) >> move & 0xff;
 }
+
 /*
  * logicalShift - shift x to the right by n, using a logical shift
  *   Can assume that 0 <= n <= 31
@@ -170,6 +172,7 @@ int logicalShift(int x, int n)
     mask = ~(mask << 1);
     return res & mask;
 }
+
 /*
  * bitCount - returns count of number of 1's in word
  *   Examples: bitCount(5) = 2, bitCount(7) = 3
@@ -177,7 +180,6 @@ int logicalShift(int x, int n)
  *   Max ops: 40
  *   Rating: 4
  */
-
 int bitCount(int x)
 {
     int mask1, mask2, mask3, mask4, mask5;
@@ -204,6 +206,7 @@ int bitCount(int x)
 
     return x;
 }
+
 /*
  * bang - Compute !x without using !
  *   Examples: bang(3) = 0, bang(0) = 1
@@ -218,6 +221,7 @@ int bang(int x)
     temp = temp >> 31;
     return temp + 1;
 }
+
 /*
  * tmin - return minimum two's complement integer
  *   Legal ops: ! ~ & ^ | + << >>
@@ -225,6 +229,7 @@ int bang(int x)
  *   Rating: 1
  */
 int tmin(void) { return 0x1 << 31; }
+
 /*
  * fitsBits - return 1 if x can be represented as an
  *  n-bit, two's complement integer.
@@ -241,6 +246,7 @@ int fitsBits(int x, int n)
     int result = !(x ^ shifted);
     return result;
 }
+
 /*
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
  *  Round tow ard zero
@@ -266,6 +272,7 @@ int divpwr2(int x, int n)
  *   Rating: 2
  */
 int negate(int x) { return ~x + 1; }
+
 /*
  * isPositive - return 1 if x > 0, return 0 otherwise
  *   Example: isPositive(-1) = 0.
@@ -306,6 +313,7 @@ int isLessOrEqual(int x, int y)
 
     return result;
 }
+
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
  *   Example: ilog2(16) = 4
@@ -323,6 +331,7 @@ int ilog2(int x)
     res = res + ((!!(x >> (1 + res))) << 0);
     return res;
 }
+
 /*
  * float_neg - Return bit-level equivalent of expression -f for
  *   floating point argument f.
@@ -349,6 +358,7 @@ unsigned float_neg(unsigned uf)
     result = (sign ^ 0x80000000) + e + mantissa;
     return result;
 }
+
 /*
  * float_i2f - Return bit-level equivalent of expression (float) x
  *   Result is returned as unsigned int, but
@@ -358,10 +368,10 @@ unsigned float_neg(unsigned uf)
  *   Max ops: 30
  *   Rating: 4
  */
-
 unsigned float_i2f(int x)
 {
     int sign, power, frac, lsb, ignored, exp;
+    int threshold = 1 << 8;
     unsigned result;
     if (x == 0)
     {
@@ -386,7 +396,7 @@ unsigned float_i2f(int x)
     ignored = frac & 0x000001ff;
     frac = frac >> 9;
     lsb = frac & 0x1;
-    if ((ignored > (1 << 8)) || ((ignored == (1 << 8)) && lsb == 1))
+    if ((ignored > threshold) || ((ignored == threshold) && lsb == 1))
     {
         frac += 1;
         if (frac == 0)
@@ -399,6 +409,7 @@ unsigned float_i2f(int x)
     result = (sign << 31) + exp + frac;
     return result;
 }
+
 /*
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
