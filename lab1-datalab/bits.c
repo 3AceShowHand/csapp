@@ -368,7 +368,6 @@ unsigned float_i2f(int x)
         return 0xcf000000;
     }
     int sign = (x >> 31) & 0x1;
-    unsigned result;
     int copyX = x;
     if (sign)
     {
@@ -378,10 +377,26 @@ unsigned float_i2f(int x)
     while ((copyX & 0x80000000) != 0x80000000)
     {
         power -= 1;
-        copyX << 1;
+        copyX = copyX << 1;
     }
-
-    int mantissa = x & ((1 << power) - 1);
+    int frac = x & ((1 << power) - 1);
+    frac = frac << (32 - power);
+    frac = frac >> 7;
+    int ignored = frac & 0x3;
+    frac = frac >> 2;
+    int lsb = frac & 0x1;
+    if (lsb == 1 && (ignored >= 2))
+    {
+        frac += 1;
+    }
+    frac = frac & 0x01ffffff;
+    if (frac == 0)
+    {
+        power += 1;
+    }
+    int exp = (power + 127) << 23;
+    unsigned result = (sign << 31) + exp + frac;
+    return result;
 }
 
 /*
