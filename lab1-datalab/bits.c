@@ -371,12 +371,7 @@ unsigned float_i2f(int x)
     {
         return 0xcf000000;
     }
-<<<<<<< HEAD
-    int sign = (x >> 31) & 0x1;
-    int copyX = x;
-=======
     sign = (x >> 31) & 0x1;
->>>>>>> ad2c4537c8b936fa97717bdf86edd03dba0ee975
     if (sign)
     {
         x = -x;
@@ -385,38 +380,15 @@ unsigned float_i2f(int x)
     while ((x & 0x80000000) != 0x80000000)
     {
         power -= 1;
-<<<<<<< HEAD
-        copyX = copyX << 1;
-    }
-    int frac = x & ((1 << power) - 1);
-    frac = frac << (32 - power);
-    frac = frac >> 7;
-    int ignored = frac & 0x3;
-    frac = frac >> 2;
-    int lsb = frac & 0x1;
-    if (lsb == 1 && (ignored >= 2))
-    {
-        frac += 1;
-    }
-    frac = frac & 0x01ffffff;
-    if (frac == 0)
-    {
-        power += 1;
-    }
-    int exp = (power + 127) << 23;
-    unsigned result = (sign << 31) + exp + frac;
-=======
         x = x << 1;
     }
     frac = x << 1;
-    frac = frac >> 7;
-    ignored = frac & 0x3;
-    frac = frac >> 2;
+    ignored = frac & 0x000001ff;
+    frac = frac >> 9;
     lsb = frac & 0x1;
-    if (lsb == 1 && (ignored >= 2))
+    if ((ignored > (1 << 8)) || ((ignored == (1 << 8)) && lsb == 1))
     {
         frac += 1;
-        frac = frac & 0x007fffff;
         if (frac == 0)
         {
             power += 1;
@@ -425,52 +397,8 @@ unsigned float_i2f(int x)
     frac = frac & 0x007fffff;
     exp = (power + 127) << 23;
     result = (sign << 31) + exp + frac;
->>>>>>> ad2c4537c8b936fa97717bdf86edd03dba0ee975
     return result;
 }
-
-// unsigned float_i2f(int x)
-// {
-//     if (x == 0)
-//     {
-//         return 0;
-//     }
-//     else if (x == 0x80000000)
-//     {
-//         return 0xcf000000;
-//     }
-//     int sign = (x >> 31) & 0x1;
-//     int copyX = x;
-//     if (sign)
-//     {
-//         copyX = -copyX;
-//     }
-//     int power = 31;
-//     while ((copyX & 0x80000000) != 0x80000000)
-//     {
-//         power -= 1;
-//         copyX = copyX << 1;
-//     }
-//     int frac = x & ((1 << power) - 1);
-//     frac = frac << (32 - power);
-//     frac = frac >> 7;
-//     int ignored = frac & 0x3;
-//     frac = frac >> 2;
-//     int lsb = frac & 0x1;
-//     if (lsb == 1 && (ignored >= 2))
-//     {
-//         frac += 1;
-//         frac = frac & 0x007fffff;
-//         if (frac == 0)
-//         {
-//             power += 1;
-//         }
-//     }
-//     frac = frac & 0x007fffff;
-//     int exp = (power + 127) << 23;
-//     unsigned result = (sign << 31) + exp + frac;
-//     return result;
-// }
 /*
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
