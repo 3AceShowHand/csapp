@@ -180,20 +180,21 @@ int logicalShift(int x, int n)
 
 int bitCount(int x)
 {
-    int mask1 = 0x5 | (0x5 << 4);
+    int mask1, mask2, mask3, mask4, mask5;
+    mask1 = 0x5 | (0x5 << 4);
     mask1 = mask1 | (mask1 << 8);
     mask1 = mask1 | (mask1 << 16);
 
-    int mask2 = 0x3 | (0x3 << 4);
+    mask2 = 0x3 | (0x3 << 4);
     mask2 = mask2 | (mask2 << 8);
     mask2 = mask2 | (mask2 << 16);
 
-    int mask3 = 0xf | (0xf << 8);
+    mask3 = 0xf | (0xf << 8);
     mask3 = mask3 | (mask3 << 16);
 
-    int mask4 = 0xff | (0xff << 16);
+    mask4 = 0xff | (0xff << 16);
 
-    int mask5 = 0xff | (0xff << 8);
+    mask5 = 0xff | (0xff << 8);
 
     x = (x & mask1) + ((x >> 1) & mask1);
     x = (x & mask2) + ((x >> 2) & mask2);
@@ -339,12 +340,13 @@ unsigned float_neg(unsigned uf)
     int e = uf & 0x7f800000;
     int exp = e >> 23;
     int mantissa = uf & 0x007fffff;
+    unsigned result;
 
     if ((exp == 255) && (mantissa != 0))
     {
         return uf;
     }
-    unsigned result = (sign ^ 0x80000000) + e + mantissa;
+    result = (sign ^ 0x80000000) + e + mantissa;
     return result;
 }
 /*
@@ -359,6 +361,8 @@ unsigned float_neg(unsigned uf)
 
 unsigned float_i2f(int x)
 {
+    int sign, power, frac, lsb, ignored, exp;
+    unsigned result;
     if (x == 0)
     {
         return 0;
@@ -367,16 +371,21 @@ unsigned float_i2f(int x)
     {
         return 0xcf000000;
     }
+<<<<<<< HEAD
     int sign = (x >> 31) & 0x1;
     int copyX = x;
+=======
+    sign = (x >> 31) & 0x1;
+>>>>>>> ad2c4537c8b936fa97717bdf86edd03dba0ee975
     if (sign)
     {
-        copyX = -copyX;
+        x = -x;
     }
-    int power = 31;
-    while ((copyX & 0x80000000) != 0x80000000)
+    power = 31;
+    while ((x & 0x80000000) != 0x80000000)
     {
         power -= 1;
+<<<<<<< HEAD
         copyX = copyX << 1;
     }
     int frac = x & ((1 << power) - 1);
@@ -396,9 +405,72 @@ unsigned float_i2f(int x)
     }
     int exp = (power + 127) << 23;
     unsigned result = (sign << 31) + exp + frac;
+=======
+        x = x << 1;
+    }
+    frac = x << 1;
+    frac = frac >> 7;
+    ignored = frac & 0x3;
+    frac = frac >> 2;
+    lsb = frac & 0x1;
+    if (lsb == 1 && (ignored >= 2))
+    {
+        frac += 1;
+        frac = frac & 0x007fffff;
+        if (frac == 0)
+        {
+            power += 1;
+        }
+    }
+    frac = frac & 0x007fffff;
+    exp = (power + 127) << 23;
+    result = (sign << 31) + exp + frac;
+>>>>>>> ad2c4537c8b936fa97717bdf86edd03dba0ee975
     return result;
 }
 
+// unsigned float_i2f(int x)
+// {
+//     if (x == 0)
+//     {
+//         return 0;
+//     }
+//     else if (x == 0x80000000)
+//     {
+//         return 0xcf000000;
+//     }
+//     int sign = (x >> 31) & 0x1;
+//     int copyX = x;
+//     if (sign)
+//     {
+//         copyX = -copyX;
+//     }
+//     int power = 31;
+//     while ((copyX & 0x80000000) != 0x80000000)
+//     {
+//         power -= 1;
+//         copyX = copyX << 1;
+//     }
+//     int frac = x & ((1 << power) - 1);
+//     frac = frac << (32 - power);
+//     frac = frac >> 7;
+//     int ignored = frac & 0x3;
+//     frac = frac >> 2;
+//     int lsb = frac & 0x1;
+//     if (lsb == 1 && (ignored >= 2))
+//     {
+//         frac += 1;
+//         frac = frac & 0x007fffff;
+//         if (frac == 0)
+//         {
+//             power += 1;
+//         }
+//     }
+//     frac = frac & 0x007fffff;
+//     int exp = (power + 127) << 23;
+//     unsigned result = (sign << 31) + exp + frac;
+//     return result;
+// }
 /*
  * float_twice - Return bit-level equivalent of expression 2*f for
  *   floating point argument f.
@@ -416,7 +488,7 @@ unsigned float_twice(unsigned uf)
     int e = uf & 0x7f800000;
     int exp = e >> 23;
     int mantissa = uf & 0x007fffff;
-
+    unsigned result;
     // special: 11111111
     if (exp == 255)
     {
@@ -441,15 +513,14 @@ unsigned float_twice(unsigned uf)
             {
                 e = 0x01000000;
             }
-            unsigned result = sign + e + mantissa;
-            return result;
+            result = sign + e + mantissa;
         }
     }
     // normalized 00000001-11111110
     else
     {
         exp = exp + 1;
-        unsigned result = sign + (exp << 23) + mantissa;
-        return result;
+        result = sign + (exp << 23) + mantissa;
     }
+    return result;
 }
