@@ -7,6 +7,10 @@ Files:
 Linux binary with code-injection vulnerability.  To be used for phases
 1-3 of the assignment.
 
+Phase1, exploit string will redirect the program to execute an existing procedure.
+Phase2, injecting a small amount of code as part of your exploit string.
+Phase3, involves a code injection attack, but passing a string as argument.
+
     rtarget
 
 Linux binary with return-oriented programming vulnerability.  To be
