@@ -2,6 +2,7 @@
 simulates the hit/miss behavior of a cache memory on this trace, and outputs
 the total number of hits, misses and evictions.
 */
+#define _GNU_SOURCE
 
 #include <getopt.h>
 #include <math.h>
@@ -11,44 +12,74 @@ the total number of hits, misses and evictions.
 #include <unistd.h>
 #include "cachelab.h"
 
-typedef struct _cacheLine {
+typedef struct _args {
+    int help;
+    int verbose;
+    int sbits;       // number of set index bits
+    int lps;         // Associativity (number of lines per set)
+    int bbits;       // number of block bits
+    char* filename;  // Name of the valgrind trace to replay
+} Args;
+
+typedef struct _CacheLine {
     int valid;
     long tag;
     int time;
-} cacheLine;
+} CacheLine;
 
 typedef struct _traceLine {
-    long addr;
-    int size;
+    long tag;
+    long setIndex;
     char op;
-} traceLine;
+} TraceLine;
 
-traceLine* createTrace() {
-    traceLine* ret = (traceLine*)malloc(sizeof(traceLine));
+Args* buildArgs() {
+    Args* ret = (Args*)malloc(sizeof(Args));
+    if (ret == NULL) {
+        return NULL;
+    }
+    ret->help = 0;
+    ret->verbose = 0;
+    ret->sbits = 0;
+    ret->lps = 0;
+    ret->bbits = 0;
+    ret->filename = NULL;
+
     return ret;
 }
 
-void destroyTrace(traceLine* tl) {
+void destroyArgs(Args* x) {
+    if (x->filename != NULL) {
+        free(x->filename);
+    }
+    free(x);
+}
+
+TraceLine* createTrace() {
+    TraceLine* ret = (TraceLine*)malloc(sizeof(TraceLine));
+    return ret;
+}
+
+void destroyTrace(TraceLine* tl) {
     free(tl);
 }
 
 // build a cache, as an array of cacheline, lc = setCount * linePerSet
 // return cache is success, else null
-cacheLine*
-buildCache(int lc) {
-    cacheLine* cache = (cacheLine*)malloc(sizeof(cacheLine) * lc);
+CacheLine* buildCache(int lc) {
+    CacheLine* cache = (CacheLine*)malloc(sizeof(CacheLine) * lc);
     if (cache == NULL) {
         return NULL;
     }
     for (int i = 0; i < lc; i++) {
         cache[i].valid = 0;
-        cache[i].tag = 0;
+        cache[i].tag = -1;
         cache[i].time = 0;
     }
     return cache;
 }
 
-void destroyCache(cacheLine* cache) {
+void destroyCache(CacheLine* cache) {
     free(cache);
 }
 
@@ -78,94 +109,207 @@ void helpInfo() {
     printf("  linux>  ./csim-ref -v -s 8 -E 2 -b 4 -t traces/yi.trace\n");
 }
 
-void parseLine(char* line, traceLine* tl) {
+int hexToDecimal(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    return c - 'a' + 10;
+}
+
+long convertAddr(char* addr) {
+    long ret = 0;
+    for (int i = 0; addr[i] != '\0'; i++) {
+        ret = ret * 16 + hexToDecimal(addr[i]);
+    }
+    return ret;
+}
+
+void parseAddr(char* addr, Args* arg, TraceLine* record) {
+    long mask = 0;
+    long x = convertAddr(addr);
+    x = x >> arg->bbits;
+    mask = (0x1L << arg->sbits) - 1;
+    record->setIndex = x & mask;
+    x = x >> arg->sbits;
+    mask = (0x1L << (64 - arg->bbits - arg->sbits)) - 1;
+    record->tag = x & mask;
+}
+
+void parseLine(char* line, TraceLine* tl, Args* arg) {
+    if (line == NULL) {
+        return;
+    }
+    if (tl == NULL) {
+        return;
+    }
     char delim = ' ';
     char* token = strtok(line, &delim);
     tl->op = *token;
     delim = ',';
     token = strtok(NULL, &delim);
-    tl->addr = atol(token);
-    token = strtok(NULL, &delim);
-    tl->size = atoi(token);
+    parseAddr(token, arg, tl);
 }
 
-void getResult(const char* filename, cacheLine* cache, int* result, int rl) {
-    if (cache == NULL) {
-        return;
-    } else if (filename == NULL) {
+// given setIdx and line per set, return idx = setIdx * linePerSet
+int getStart(int setIdx, int lc) {
+    return setIdx * lc;
+}
+
+// this function will be called, if all cache lines are valid, then find the one with largest time
+int getLRUIndex(CacheLine* cache, int start, int lc) {
+    int end = start + lc;
+    int ret = start;
+    for (int i = start + 1; i < end; i++) {
+        if (cache[ret].time > cache[i].time) {
+            ret = i;
+        }
+    }
+    return ret;
+}
+
+// reset ith cache line, set valid, tag, and time to original status.
+void replace(CacheLine* cache, int i, long t, int time) {
+    cache[i].time = time;
+    cache[i].tag = t;
+    cache[i].valid = 1;
+}
+
+// hit, if a line in the given cache set have the same tag as argument t, return 1
+// in miss, if all lines are valid, then eviction should be perform, return 0
+
+void update(CacheLine* cache, TraceLine* record, Args* arg, int* result, int rl, int time) {
+    int length = arg->lps;
+    int start = getStart(record->setIndex, length);
+    int end = start + length;
+    CacheLine* cursor = NULL;
+    int hit = -1;
+    int empty = -1;
+    for (int i = start; i < end; i++) {
+        cursor = &(cache[i]);
+        if (cursor->valid == 0) {  // find empty cache line, does not eviction.
+            empty = i;
+        } else if ((cursor->valid == 1) && (cursor->tag == record->tag)) {  // hit
+            hit = i;
+            replace(cache, hit, record->tag, time);
+            result[0] += 1;
+            if (arg->verbose) {
+                printf(" hit");
+            }
+            return;
+        }
+    }
+    // must miss.
+    if (hit == -1) {
+        result[1] += 1;
+        if (empty != -1) {  // empty != -1, then just replace that cacheline
+            replace(cache, empty, record->tag, time);
+            if (arg->verbose) {
+                printf(" miss");
+            }
+        } else {  // should eviction, which means all cacheLine is valid.
+            int idx = getLRUIndex(cache, start, length);
+            replace(cache, idx, record->tag, time);
+            result[2] += 1;
+            if (arg->verbose) {
+                printf(" miss eviction");
+            }
+        }
+    }
+}
+
+void getResult(Args* arg, int* result, int rl) {
+    if (arg->filename == NULL) {
         return;
     }
-    FILE* file = fopen(filename, "r");
+    FILE* file = fopen(arg->filename, "r");
     if (file == NULL) {
+        return;
+    }
+    int setSize = 1 << arg->sbits;
+    CacheLine* cache = buildCache(arg->lps * setSize);
+    if (cache == NULL) {
+        return;
+    }
+    TraceLine* record = createTrace();
+    if (record == NULL) {
         return;
     }
     char* line = NULL;
     size_t len = 0;
-
-    traceLine* record = createTrace();
-    if (record == NULL) {
-        printf("cannot create trace line.");
-        return;
-    }
+    int time = 1;
     while (getline(&line, &len, file) != -1) {
         if (line[0] == ' ') {
-            parseLine(line, record);
+            strtok(line, "\n");
+            if (arg->verbose) {
+                printf("%s", line);
+            }
+            parseLine(line, record, arg);
+            switch (record->op) {
+                case 'L':
+                    update(cache, record, arg, result, 3, time);
+                    break;
+                case 'S':
+                    update(cache, record, arg, result, 3, time);
+                    break;
+                case 'M':
+                    update(cache, record, arg, result, 3, time);
+                    update(cache, record, arg, result, 3, time);
+                    break;
+                default:
+                    break;
+            }
+            printf("\n");
         }
+        time += 1;
     }
     free(line);
     destroyTrace(record);
+    destroyCache(cache);
     fclose(file);
 }
 
 int main(int args, char* argv[]) {
-    int addrSize = 64;
-    int tagBits = 0;
-    int setBits = 0;
-    int blockBits = 0;
-
-    int linePerSet = 0;
-    int result[3] = {0, 0, 0};  // hit, miss, eviction
+    Args* arg = buildArgs();
 
     int ch;
     const char* optstring = "hv::s:E:b:t:";
-    char* filename = NULL;
     while ((ch = getopt(args, argv, optstring)) != -1) {
         switch (ch) {
             case 'h':
-                helpInfo();
+                arg->help = 1;
                 break;
             case 'v':
                 // print verbose information
+                arg->verbose = 1;
                 break;
             case 's':
                 // fetch number of set index bits
-                setBits = atoi(optarg);
+                arg->sbits = atoi(optarg);
                 break;
             case 'E':
                 // fetch number of lines per set (Associativity)
-                linePerSet = atoi(optarg);
+                arg->lps = atoi(optarg);
                 break;
             case 'b':
-                blockBits = atoi(optarg);
+                arg->bbits = atoi(optarg);
                 // fetch number of block bits
                 break;
             case 't':
                 // fetch name of the valgrind trace to replay
-                filename = strdup(optarg);
+                arg->filename = strdup(optarg);
                 break;
             default:
                 break;
         }
     }
-
-    int setCount = (int)pow(2, setBits);
-    int lineCount = setCount * linePerSet;
-    tagBits = addrSize - blockBits - setBits;
-    cacheLine* cache = buildCache(lineCount);
-
-    getResult(filename, cache, result, 3);
+    if (arg->filename == NULL) {
+        destroyArgs(arg);
+        helpInfo();
+        return 0;
+    }
+    int result[] = {0, 0, 0};
+    getResult(arg, result, 3);
     printSummary(result[0], result[1], result[2]);
-    free(filename);
-    destroyCache(cache);
+    destroyArgs(arg);
     return 0;
 }
