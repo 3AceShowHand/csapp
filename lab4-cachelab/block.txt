@@ -1,0 +1,11 @@
+partition A AND C into 1 x bsize row silvers
+partition B into bsize x bsize blocks
+
+
+Load a block of B into the cache, uses it up, then discards it.
+
+Reference to A enjoy good spatial locality because each silver is accessed with a stride of 1. There is also good temporal locality because the entire silver is referenced bsize times in succession.
+
+References to B enjoy good temporal locality because the entire bsize x bsize block is accessed n times in succession.
+
+References to C have good spatial locality because each element of the silver is written in succession. Do not have good temporal locality because each silver is only accessed one time.
