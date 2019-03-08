@@ -81,6 +81,7 @@ void listjobs(struct job_t *jobs);
 void usage(void);
 void unix_error(char *msg);
 void app_error(char *msg);
+pid_t Fork();
 typedef void handler_t(int);
 handler_t *Signal(int signum, handler_t *handler);
 
@@ -145,7 +146,6 @@ int main(int argc, char **argv) {
         fflush(stdout);
         fflush(stdout);
     }
-
     exit(0); /* control never reaches here */
 }
 
@@ -161,6 +161,33 @@ int main(int argc, char **argv) {
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
 void eval(char *cmdline) {
+    char *argv[MAXARGS];
+    char buf[MAXLINE];
+    int bg;
+    pid_t pid;
+
+    strcpy(buf, cmdline);
+    bg = parseline(buf, argv);
+    if (argv[0] == NULL) {
+        return;
+    }
+
+    if (!builtin_cmd(argv)) {
+        if ((pid = Fork()) == 0) {  // child process
+            if (execve(argv[0], argv, environ) < 0) {
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+        if (!bg) {
+            int status;
+            if (waitpid(pid, &status, 0) < 0) {
+                unix_error("waitfg: waitpid error");
+            }
+        } else {
+            printf("%d %s", pid, cmdline);
+        }
+    }
     return;
 }
 
@@ -220,9 +247,18 @@ int parseline(const char *cmdline, char **argv) {
 
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
- *    it immediately.  
+ *    it immediately. 
  */
 int builtin_cmd(char **argv) {
+    if (strcmp(argv[0], "quit")) {
+        exit(0);
+    }
+    const char *builtin[] = {"fg", "bg", "jobs"};
+    for (int i = 0; i < 3; i++) {
+        if (strcmp(argv[0], builtin[i])) {
+            return 1;
+        }
+    }
     return 0; /* not a builtin command */
 }
 
@@ -454,6 +490,14 @@ void unix_error(char *msg) {
 void app_error(char *msg) {
     fprintf(stdout, "%s\n", msg);
     exit(1);
+}
+
+pid_t Fork() {
+    pid_t pid;
+    if ((pid = fork()) < 0) {
+        unix_error("Fork error");
+    }
+    return pid;
 }
 
 /*
