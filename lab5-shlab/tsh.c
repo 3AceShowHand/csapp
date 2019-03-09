@@ -326,24 +326,30 @@ void do_bgfg(char **argv) {
         printf("%s: argument must be a PID or %%jobid", argv[0]);
         return;
     }
+
     int bg = (strcmp(argv[0], "bg") == 0);
+    sigset_t mask, prev;
+    Sigfillset(&mask);
     if (bg) {
         if (target->state == BG) {
             printf("[%d] (%d) %s", jid, pid, target->cmdline);
             return;
         } else if (target->state == ST) {
             Kill(-pid, SIGCONT);
+
+            Sigprocmask(SIG_BLOCK, &mask, &prev);
             target->state = BG;
+            Sigprocmask(SIG_SETMASK, &prev, NULL);
+
             printf("[%d] (%d) %s", jid, pid, target->cmdline);
         }
-    } else {
-        sigset_t mask;
-        Sigfillset(&mask);
-        Sigprocmask(SIG_BLOCK, &mask, NULL);
+    } else {  // this is a bg job
+        Sigprocmask(SIG_BLOCK, &mask, &prev);
         if (target->state == ST) {
             Kill(-pid, SIGCONT);
         }
         target->state = FG;
+        Sigprocmask(SIG_SETMASK, &prev, NULL);
         waitfg(pid);
         return;
     }
