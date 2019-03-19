@@ -7,52 +7,15 @@
 
 typedef struct {
 	char* method;
-	char* url;
-	char* version;
 	char* host;
+	char* query;
+	char* version;
 	char* user_agent;
 	char* accept_language;
 	char connection[6];
-} client_request;
+	char proxy_connection[6];
 
-typedef struct {
-	char* query;
-	char* host;
-	char* version;
-} proxy_request;
-
-//typedef struct {
-//	char* version;
-//	char* status;
-//	char* status_info;
-//} response_line;
-//
-//typedef struct {
-//	char connection[6];
-//	char* server;
-//	char* last_modified;
-//	char* content_length;
-//	char* content_type;
-//} response_header_line;
-
-//typedef struct {
-//	response_line title;
-//	response_header_line content;
-//} response;
-
-void get_request(int fd, char* buf, int buflen) {
-	rio_t rio;
-	Rio_readinitb(&rio, fd);
-
-	char line[MAXLINE];
-	Rio_readlineb(&rio, line, MAXLINE);
-	while (strcmp(line, "\r\n")) {
-		strcat(buf, line);
-		Rio_readlineb(&rio, line, MAXLINE);
-	}
-	strcat(buf, "\r\n");
-	printf("%s\n", buf);
-}
+} request;
 
 char* build_query(char* str, int len) {
 	char* ret = (char*)Malloc(len + 2);
@@ -61,45 +24,50 @@ char* build_query(char* str, int len) {
 	return ret;
 }
 
-void parse_proxy(proxy_request* proxyRequest, char* line, int buflen) {
+/*
+ * get host and query for request
+*/
+void parse_host_query(request* req, char* line, int len) {
 	char* rest = line;
 	const char* delim = "/";
 
 	char* token = strtok_r(rest, delim, &rest);
 	token = strtok_r(rest, delim, &rest);
-	proxyRequest->host = strdup(token);
-	proxyRequest->query = build_query(rest, strlen(rest));
-	proxyRequest->version = strdup("HTTP/1.0");
+	req->host = strdup(token);
+	req->query = build_query(rest, strlen(rest));
 }
 
-void parse_title(client_request* req, char* line, int buflen) {
+/*
+ * get http method, version by call this function.
+ * host and query also obtained by call parse_host_query.
+*/
+void parse_title(request* req, char* line, int len) {
 	char* rest = line;
 	const char* delim = " ";
 	char* token = strtok_r(rest, delim, &rest);
-
 	req->method = strdup(token);
+
 	token = strtok_r(rest, delim, &rest);
-	req->url = strdup(token);
+	parse_host_query(req, token, strlen(token));
+
 	token = strtok_r(rest, delim, &rest);
 	req->version = strdup(token);
 }
 
-void parse_host(client_request* req, char* line, int buflen) {
-	char* rest = line;
-	const char* delim = ": ";
-	char* token = strtok_r(rest, delim, &rest);
-	token = strtok_r(rest, delim, &rest);
-	req->host = strdup(token);
-}
-
-void parse_useragent(client_request* req, char* line, int buflen) {
+/*
+ * get user_agent for request
+*/
+void parse_useragent(request* req, char* line, int len) {
 	char* rest = line;
 	const char* delim = ": ";
 	strtok_r(rest, delim, &rest);
 	req->user_agent = strdup(rest+1);
 }
 
-void parse_language(client_request* req, char* line, int buflen) {
+/*
+ * get accept_language for request
+*/
+void parse_language(client_request* req, char* line, int len) {
 	char* rest = line;
 	const char* delim = ": ";
 	char* token = strtok_r(rest, delim, &rest);
@@ -108,53 +76,50 @@ void parse_language(client_request* req, char* line, int buflen) {
 }
 
 /*
- * parse a http request line by line
- * only store title, host, user-agent, language information
+ * parse incoming client http request into a struct
+ * each field obtained by parse functions above.
+ * each function parse lines by call strtok_r function to separte each words in the line.
 */
-client_request* build_client_request(char* buf, int buflen) {
-	client_request* ret = (client_request*)Malloc(sizeof(client_request));
+request* build_request(char* buf, int len) {
+	request* req = (request*)Malloc(sizeof(request));
 	char* rest = buf;
 	const char* delim = "\r\n";
 
 	char* line = strtok_r(rest, delim, &rest);
-	parse_title(ret, line, MAXLINE);
+	parse_title(req, line, strlen(line));
 
 	line = strtok_r(rest, delim, &rest);
-	parse_host(ret, line, MAXLINE);
+	parse_useragent(req, line, strlen(line));
 
 	line = strtok_r(rest, delim, &rest);
-	parse_useragent(ret, line, MAXLINE);
+	parse_language(req, line, strlen(line));
 
-	line = strtok_r(rest, delim, &rest);
-	line = strtok_r(rest, delim, &rest);
-	parse_language(ret, line, MAXLINE);
-
-	strncpy(ret->connection, "close", 6);
-
-	return ret;
+	strncpy(req->connection, "close", 6);
+	strncpy(req->proxy_connection, "close", 6);
 }
 
-void destroy_client_request(client_request* n) {
+void destroy_request(request* n) {
 	Free(n->method);
-	Free(n->url);
-	Free(n->version);
 	Free(n->host);
+	Free(n->query);
+	Free(n->version);
 	Free(n->user_agent);
 	Free(n->accept_language);
 	Free(n);
 }
 
-proxy_request* build_proxy_request(client_request* req) {
-	proxy_request* ret = (proxy_request*)Malloc(sizeof(proxy_request));
-	parse_proxy(ret, req->url, strlen(req->host));
-	return ret;
-}
+void get_request(int fd, char* buf, int len) {
+	rio_t rio;
+	Rio_readinitb(&rio, fd);
 
-void destroy_proxy_request(proxy_request* x) {
-	Free(x->host);
-	Free(x->query);
-	Free(x->version);
-	Free(x);
+	char line[MAXBUF];
+	Rio_readlineb(&rio, line, MAXBUF);
+	while (strcmp(line, "\r\n")) {
+		strcat(buf, line);
+		Rio_readlineb(&rio, line, MAXBUF);
+	}
+	strcat(buf, "\r\n");
+	printf("%s\n", buf);
 }
 
 int main(int argc, char* argv[]) {
@@ -163,37 +128,69 @@ int main(int argc, char* argv[]) {
 		exit(0);
 	}
 
-	char hostname[MAXLINE], port[MAXLINE];
+	char hostname[MAXBUF], port[MAXBUF];
 	struct sockaddr_storage clientaddr;
 	socklen_t clientlen;
 	int listenfd, connfd;
 	listenfd = Open_listenfd(argv[1]);
 
-	char buf[MAXLINE];
+	char buf[MAXBUF];
 	while (1) {
 		clientlen = sizeof(clientaddr);
 		connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
-		Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE,
-		            port, MAXLINE, 0);
+		Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXBUF,
+		            port, MAXBUF, 0);
 		printf("Accepted connection from (%s, %s)\n", hostname, port);
-		memset(buf, 0, MAXLINE);
-		get_request(connfd, buf, MAXLINE);
-		client_request* req = build_client_request(buf, MAXLINE);
+		memset(buf, 0, MAXBUF);
+		get_request(connfd, buf, MAXBUF);
+		request* req = build_request(buf, strlen(buf));
 
-		printf("method is: %s\n", req->method);
-		printf("url is: %s\n", req->url);
-		printf("version is: %s\n", req->version);
-		printf("host is: %s\n", req->host);
-		printf("language is: %s\n", req->accept_language);
-		printf("user-agent is: %s\n", req->user_agent);
-		printf("connection is: %s\n", req->connection);
+//		client_request* req = build_client_request(buf, MAXBUF);
 
-		proxy_request* proxyRequest = build_proxy_request(req);
-		printf("request host for proxy is: %s\n", proxyRequest->host);
-		printf("request query for proxy is: %s\n", proxyRequest->query);
-		printf("request version for proxy is: %s\n", proxyRequest->version);
-		destroy_client_request(req);
-		destroy_proxy_request(proxyRequest);
+//		printf("method is: %s\n", req->method);
+//		printf("url is: %s\n", req->url);
+//		printf("version is: %s\n", req->version);
+//		printf("host is: %s\n", req->host);
+//		printf("language is: %s\n", req->accept_language);
+//		printf("user-agent is: %s\n", req->user_agent);
+//		printf("connection is: %s\n", req->connection);
+//
+//		proxy_request* proxyRequest = build_proxy_request(req);
+//		printf("request host for proxy is: %s\n", proxyRequest->host);
+//		printf("request query for proxy is: %s\n", proxyRequest->query);
+//		printf("request version for proxy is: %s\n", proxyRequest->version);
+//		destroy_client_request(req);
+//		destroy_proxy_request(proxyRequest);
 		Close(connfd);
 	}
 }
+
+//void send_proxy_request(proxy_request* proxyRequest) {
+//	char* buf[MAXBUF];
+//
+//	sprintf(buf, "%s %s %s\r\n", proxyRequest.)
+//
+//}
+
+//void serve_static(int fd, char *filename, int filesize) {
+//	int srcfd;
+//	char *srcp, filetype[MAXBUF], buf[MAXBUF];
+//
+//	/* Send response headers to client */
+//	get_filetype(filename, filetype);     //line:netp:servestatic:getfiletype
+//	sprintf(buf, "HTTP/1.0 200 OK\r\n");  //line:netp:servestatic:beginserve
+//	sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
+//	sprintf(buf, "%sConnection: close\r\n", buf);
+//	sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
+//	sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
+//	Rio_writen(fd, buf, strlen(buf));  //line:netp:servestatic:endserve
+//	printf("Response headers:\n");
+//	printf("%s", buf);
+//
+//	/* Send response body to client */
+//	srcfd = Open(filename, O_RDONLY, 0);                         //line:netp:servestatic:open
+//	srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);  //line:netp:servestatic:mmap
+//	Close(srcfd);                                                //line:netp:servestatic:close
+//	Rio_writen(fd, srcp, filesize);                              //line:netp:servestatic:write
+//	Munmap(srcp, filesize);                                      //line:netp:servestatic:munmap
+//}
