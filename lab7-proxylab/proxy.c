@@ -50,8 +50,8 @@ void parse_title(request* req, char* line, int len) {
 	token = strtok_r(rest, delim, &rest);
 	parse_host_query(req, token, strlen(token));
 
-	token = strtok_r(rest, delim, &rest);
-	req->version = strdup(token);
+	// token = strtok_r(rest, delim, &rest);
+	req->version = strdup("HTTP/1.0");
 }
 
 /*
@@ -67,7 +67,7 @@ void parse_useragent(request* req, char* line, int len) {
 /*
  * get accept_language for request
 */
-void parse_language(client_request* req, char* line, int len) {
+void parse_language(request* req, char* line, int len) {
 	char* rest = line;
 	const char* delim = ": ";
 	char* token = strtok_r(rest, delim, &rest);
@@ -82,20 +82,23 @@ void parse_language(client_request* req, char* line, int len) {
 */
 request* build_request(char* buf, int len) {
 	request* req = (request*)Malloc(sizeof(request));
+
 	char* rest = buf;
 	const char* delim = "\r\n";
+	char* line = NULL;
 
-	char* line = strtok_r(rest, delim, &rest);
-	parse_title(req, line, strlen(line));
-
-	line = strtok_r(rest, delim, &rest);
-	parse_useragent(req, line, strlen(line));
-
-	line = strtok_r(rest, delim, &rest);
-	parse_language(req, line, strlen(line));
-
+	while ((line = strtok_r(rest, delim, &rest))) {
+		if (strstr(line, "HTTP") != NULL) {
+			parse_title(req, line, strlen(line));
+		} else if (strstr(line, "User-Agent") != NULL) {
+			parse_useragent(req, line, strlen(line));
+		} else if (strstr(line, "Accept-Language") != NULL) {
+			parse_language(req, line, strlen(line));
+		}
+	}
 	strncpy(req->connection, "close", 6);
 	strncpy(req->proxy_connection, "close", 6);
+	return req;
 }
 
 void destroy_request(request* n) {
@@ -122,6 +125,18 @@ void get_request(int fd, char* buf, int len) {
 	printf("%s\n", buf);
 }
 
+void send_proxy_request(request* req) {
+	char buf[MAXBUF];
+
+	sprintf(buf, "%s %s %s\r\n", req->method, req->query, req->version);
+	sprintf(buf, "%sHost: %s\r\n", buf, req->host);
+	sprintf(buf, "%sConnection: %s\r\n", buf, req->connection);
+	sprintf(buf, "%sProxy Connetion: %s\r\n", buf, req->proxy_connection);
+	printf("response header is\n");
+	printf("%s", buf);
+}
+
+
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s <port>\n", argv[0]);
@@ -141,56 +156,22 @@ int main(int argc, char* argv[]) {
 		Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXBUF,
 		            port, MAXBUF, 0);
 		printf("Accepted connection from (%s, %s)\n", hostname, port);
+
 		memset(buf, 0, MAXBUF);
 		get_request(connfd, buf, MAXBUF);
 		request* req = build_request(buf, strlen(buf));
 
-//		client_request* req = build_client_request(buf, MAXBUF);
-
-//		printf("method is: %s\n", req->method);
-//		printf("url is: %s\n", req->url);
-//		printf("version is: %s\n", req->version);
-//		printf("host is: %s\n", req->host);
-//		printf("language is: %s\n", req->accept_language);
-//		printf("user-agent is: %s\n", req->user_agent);
-//		printf("connection is: %s\n", req->connection);
-//
-//		proxy_request* proxyRequest = build_proxy_request(req);
-//		printf("request host for proxy is: %s\n", proxyRequest->host);
-//		printf("request query for proxy is: %s\n", proxyRequest->query);
-//		printf("request version for proxy is: %s\n", proxyRequest->version);
-//		destroy_client_request(req);
-//		destroy_proxy_request(proxyRequest);
+		printf("method is: %s\n", req->method);
+		printf("host is: %s\n", req->host);
+		printf("query is: %s\n", req->query);
+		printf("version is: %s\n", req->version);
+		printf("user-agent is: %s\n", req->user_agent);
+		printf("language is: %s\n", req->accept_language);
+		printf("connection is: %s\n", req->connection);
+		printf("proxy connection is: %s\n", req->proxy_connection);
+		send_proxy_request(req);
+		destroy_request(req);
 		Close(connfd);
 	}
 }
 
-//void send_proxy_request(proxy_request* proxyRequest) {
-//	char* buf[MAXBUF];
-//
-//	sprintf(buf, "%s %s %s\r\n", proxyRequest.)
-//
-//}
-
-//void serve_static(int fd, char *filename, int filesize) {
-//	int srcfd;
-//	char *srcp, filetype[MAXBUF], buf[MAXBUF];
-//
-//	/* Send response headers to client */
-//	get_filetype(filename, filetype);     //line:netp:servestatic:getfiletype
-//	sprintf(buf, "HTTP/1.0 200 OK\r\n");  //line:netp:servestatic:beginserve
-//	sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
-//	sprintf(buf, "%sConnection: close\r\n", buf);
-//	sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
-//	sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
-//	Rio_writen(fd, buf, strlen(buf));  //line:netp:servestatic:endserve
-//	printf("Response headers:\n");
-//	printf("%s", buf);
-//
-//	/* Send response body to client */
-//	srcfd = Open(filename, O_RDONLY, 0);                         //line:netp:servestatic:open
-//	srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);  //line:netp:servestatic:mmap
-//	Close(srcfd);                                                //line:netp:servestatic:close
-//	Rio_writen(fd, srcp, filesize);                              //line:netp:servestatic:write
-//	Munmap(srcp, filesize);                                      //line:netp:servestatic:munmap
-//}
