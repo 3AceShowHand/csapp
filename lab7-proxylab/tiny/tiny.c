@@ -14,6 +14,7 @@ void serve_dynamic(int fd, char *filename, char *cgiargs);
 void clienterror(int fd, char *cause, char *errnum,
                  char *shortmsg, char *longmsg);
 
+
 int main(int argc, char **argv) {
     int listenfd, connfd;
     char hostname[MAXLINE], port[MAXLINE];
@@ -60,7 +61,7 @@ void doit(int fd) {
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
         return;
-    }                        //line:netp:doit:endrequesterr
+    }                             //line:netp:doit:endrequesterr
     read_requesthdrs(&rio);  //line:netp:doit:readrequesthdrs
 
     /* Parse URI from GET request */
