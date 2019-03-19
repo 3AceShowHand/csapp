@@ -5,44 +5,40 @@
 #include "proxy.h"
 #include "cache.h"
 
-static const char *user_agent_hdr = "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 Firefox/10.0.3\r\n";
-
 typedef struct {
 	char* method;
 	char* url;
 	char* version;
-} request_line;
-
-typedef struct {
-	int connection;
 	char* host;
 	char* user_agent;
 	char* accept_language;
-} request_header_line;
+	char connection[6];
+} client_request;
 
 typedef struct {
-	request_line title;
-	request_header_line content;
-} request;
-
-typedef struct {
+	char* query;
+	char* host;
 	char* version;
-	char* status;
-	char* status_info;
-} response_line;
+} proxy_request;
 
-typedef struct {
-	char* connection;
-	char* server;
-	char* last_modified;
-	char* content_length;
-	char* content_type;
-} response_header_line;
+//typedef struct {
+//	char* version;
+//	char* status;
+//	char* status_info;
+//} response_line;
+//
+//typedef struct {
+//	char connection[6];
+//	char* server;
+//	char* last_modified;
+//	char* content_length;
+//	char* content_type;
+//} response_header_line;
 
-typedef struct {
-	response_line title;
-	response_header_line content;
-} response;
+//typedef struct {
+//	response_line title;
+//	response_header_line content;
+//} response;
 
 void get_request(int fd, char* buf, int buflen) {
 	rio_t rio;
@@ -58,47 +54,65 @@ void get_request(int fd, char* buf, int buflen) {
 	printf("%s\n", buf);
 }
 
-void parse_title(request* req, char* line, int buflen) {
+char* build_query(char* str, int len) {
+	char* ret = (char*)Malloc(len + 2);
+	*ret = '/';
+	strcpy(ret+1, str);
+	return ret;
+}
+
+void parse_proxy(proxy_request* proxyRequest, char* line, int buflen) {
+	char* rest = line;
+	const char* delim = "/";
+
+	char* token = strtok_r(rest, delim, &rest);
+	token = strtok_r(rest, delim, &rest);
+	proxyRequest->host = strdup(token);
+	proxyRequest->query = build_query(rest, strlen(rest));
+	proxyRequest->version = strdup("HTTP/1.0");
+}
+
+void parse_title(client_request* req, char* line, int buflen) {
 	char* rest = line;
 	const char* delim = " ";
 	char* token = strtok_r(rest, delim, &rest);
-	req->title.method = strdup(token);
+
+	req->method = strdup(token);
 	token = strtok_r(rest, delim, &rest);
-	req->title.url = strdup(token);
+	req->url = strdup(token);
 	token = strtok_r(rest, delim, &rest);
-	req->title.version = strdup(token);
+	req->version = strdup(token);
 }
 
-void parse_host(request* req, char* line, int buflen) {
+void parse_host(client_request* req, char* line, int buflen) {
 	char* rest = line;
 	const char* delim = ": ";
 	char* token = strtok_r(rest, delim, &rest);
 	token = strtok_r(rest, delim, &rest);
-	req->content.host = strdup(token);
+	req->host = strdup(token);
 }
 
-void parse_useragent(request* req, char* line, int buflen) {
+void parse_useragent(client_request* req, char* line, int buflen) {
+	char* rest = line;
+	const char* delim = ": ";
+	strtok_r(rest, delim, &rest);
+	req->user_agent = strdup(rest+1);
+}
+
+void parse_language(client_request* req, char* line, int buflen) {
 	char* rest = line;
 	const char* delim = ": ";
 	char* token = strtok_r(rest, delim, &rest);
 	token = strtok_r(rest, delim, &rest);
-	req->content.user_agent = strdup(token);
-}
-
-void parse_language(request* req, char* line, int buflen) {
-	char* rest = line;
-	const char* delim = ": ";
-	char* token = strtok_r(rest, delim, &rest);
-	token = strtok_r(rest, delim, &rest);
-	req->content.accept_language = strdup(token);
+	req->accept_language = strdup(token);
 }
 
 /*
  * parse a http request line by line
  * only store title, host, user-agent, language information
 */
-request* build_request(char* buf, int buflen) {
-	request* ret = (request*)Malloc(sizeof(request));
+client_request* build_client_request(char* buf, int buflen) {
+	client_request* ret = (client_request*)Malloc(sizeof(client_request));
 	char* rest = buf;
 	const char* delim = "\r\n";
 
@@ -115,19 +129,32 @@ request* build_request(char* buf, int buflen) {
 	line = strtok_r(rest, delim, &rest);
 	parse_language(ret, line, MAXLINE);
 
-	ret->content.connection = 0;
+	strncpy(ret->connection, "close", 6);
 
 	return ret;
 }
 
-void destroy_request(request* n) {
-	Free(n->title.method);
-	Free(n->title.url);
-	Free(n->title.version);
-	Free(n->content.host);
-	Free(n->content.user_agent);
-	Free(n->content.accept_language);
+void destroy_client_request(client_request* n) {
+	Free(n->method);
+	Free(n->url);
+	Free(n->version);
+	Free(n->host);
+	Free(n->user_agent);
+	Free(n->accept_language);
 	Free(n);
+}
+
+proxy_request* build_proxy_request(client_request* req) {
+	proxy_request* ret = (proxy_request*)Malloc(sizeof(proxy_request));
+	parse_proxy(ret, req->url, strlen(req->host));
+	return ret;
+}
+
+void destroy_proxy_request(proxy_request* x) {
+	Free(x->host);
+	Free(x->query);
+	Free(x->version);
+	Free(x);
 }
 
 int main(int argc, char* argv[]) {
@@ -151,17 +178,22 @@ int main(int argc, char* argv[]) {
 		printf("Accepted connection from (%s, %s)\n", hostname, port);
 		memset(buf, 0, MAXLINE);
 		get_request(connfd, buf, MAXLINE);
-		request* req =  build_request(buf, MAXLINE);
+		client_request* req = build_client_request(buf, MAXLINE);
 
-		printf("method is: %s\n", req->title.method);
-		printf("length of method is: %d\n", strlen(req->title.method));
-		printf("url is: %s\n", req->title.url);
-		printf("version is: %s\n", req->title.version);
-		printf("host is: %s\n", req->content.host);
-		printf("language is: %s\n", req->content.accept_language);
-		printf("user-agent is: %s\n", req->content.user_agent);
-		printf("connection is: %d\n", req->content.connection);
-		destroy_request(req);
+		printf("method is: %s\n", req->method);
+		printf("url is: %s\n", req->url);
+		printf("version is: %s\n", req->version);
+		printf("host is: %s\n", req->host);
+		printf("language is: %s\n", req->accept_language);
+		printf("user-agent is: %s\n", req->user_agent);
+		printf("connection is: %s\n", req->connection);
+
+		proxy_request* proxyRequest = build_proxy_request(req);
+		printf("request host for proxy is: %s\n", proxyRequest->host);
+		printf("request query for proxy is: %s\n", proxyRequest->query);
+		printf("request version for proxy is: %s\n", proxyRequest->version);
+		destroy_client_request(req);
+		destroy_proxy_request(proxyRequest);
 		Close(connfd);
 	}
 }

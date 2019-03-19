@@ -22,4 +22,5 @@
 # work process
 1. read source code of csapp.c and tiny.c, get familier with network programming apis.
 2. by setting firefox proxy configuration, request can send to proxy successfully.
-3. check how to get request information.
+3. get request information from browser, and parsed into request struct.
+4. check how to send request to server side.
