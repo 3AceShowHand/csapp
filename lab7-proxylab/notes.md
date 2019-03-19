@@ -24,3 +24,5 @@
 2. by setting firefox proxy configuration, request can send to proxy successfully.
 3. get request information from browser, and parsed into request struct.
 4. check how to send request to server side.
+5. how to get response information
+6. get response information from server, buf cause stack overflow.

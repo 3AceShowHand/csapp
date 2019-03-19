@@ -5,9 +5,15 @@
 #include "proxy.h"
 #include "cache.h"
 
+
+#define MAX_CACHE_SIZE 1049000
+#define MAX_OBJECT_SIZE 102400
+
+
 typedef struct {
 	char* method;
 	char* host;
+	char* port;
 	char* query;
 	char* version;
 	char* user_agent;
@@ -33,8 +39,14 @@ void parse_host_query(request* req, char* line, int len) {
 
 	char* token = strtok_r(rest, delim, &rest);
 	token = strtok_r(rest, delim, &rest);
-	req->host = strdup(token);
 	req->query = build_query(rest, strlen(rest));
+	if (strstr(token, ":")) {
+		token = strtok_r(token, ":", &rest);
+		req->port = strdup(rest);
+	} else {
+		req->port = strdup("80");
+	}
+	req->host = strdup(token);
 }
 
 /*
@@ -49,8 +61,6 @@ void parse_title(request* req, char* line, int len) {
 
 	token = strtok_r(rest, delim, &rest);
 	parse_host_query(req, token, strlen(token));
-
-	// token = strtok_r(rest, delim, &rest);
 	req->version = strdup("HTTP/1.0");
 }
 
@@ -104,6 +114,7 @@ request* build_request(char* buf, int len) {
 void destroy_request(request* n) {
 	Free(n->method);
 	Free(n->host);
+	Free(n->port);
 	Free(n->query);
 	Free(n->version);
 	Free(n->user_agent);
@@ -125,17 +136,53 @@ void get_request(int fd, char* buf, int len) {
 	printf("%s\n", buf);
 }
 
-void send_proxy_request(request* req) {
+int send_proxy_request(request* req) {
 	char buf[MAXBUF];
 
 	sprintf(buf, "%s %s %s\r\n", req->method, req->query, req->version);
 	sprintf(buf, "%sHost: %s\r\n", buf, req->host);
 	sprintf(buf, "%sConnection: %s\r\n", buf, req->connection);
-	sprintf(buf, "%sProxy Connetion: %s\r\n", buf, req->proxy_connection);
-	printf("response header is\n");
+	sprintf(buf, "%sProxy Connetion: %s\r\n\r\n", buf, req->proxy_connection);
+
+	printf("proxy request is\n");
 	printf("%s", buf);
+
+	int fd = Open_clientfd(req->host, req->port);
+	rio_t rio;
+	Rio_readinitb(&rio, fd);
+	Rio_writen(fd, buf, strlen(buf)); // send request to server
+
+	return fd;
+//	char server_response[MAXBUF];
+//	int n;
+//	while ((n = Rio_readlineb(&rio, buf, MAXBUF)) != 0) {
+//		printf("%s", buf);
+//		strcat(server_response, buf);
+//		printf("current length is %d\n", (int)strlen(server_response));
+//	}
 }
 
+void send_proxy_response(int proxyfd, int fd) {
+	int n;
+	char buf[MAXBUF];
+	rio_t rio;
+	Rio_readinitb(&rio, proxyfd);
+	while ((n = rio_readlineb(&rio, buf, MAXBUF)) != 0) {
+		Rio_writen(fd, buf, n);
+	}
+}
+
+void print_req(request* req) {
+	printf("method is: %s\n", req->method);
+	printf("host is: %s\n", req->host);
+	printf("port is: %s\n", req->port);
+	printf("query is: %s\n", req->query);
+	printf("version is: %s\n", req->version);
+	printf("user-agent is: %s\n", req->user_agent);
+	printf("language is: %s\n", req->accept_language);
+	printf("connection is: %s\n", req->connection);
+	printf("proxy connection is: %s\n", req->proxy_connection);
+}
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -160,18 +207,12 @@ int main(int argc, char* argv[]) {
 		memset(buf, 0, MAXBUF);
 		get_request(connfd, buf, MAXBUF);
 		request* req = build_request(buf, strlen(buf));
-
-		printf("method is: %s\n", req->method);
-		printf("host is: %s\n", req->host);
-		printf("query is: %s\n", req->query);
-		printf("version is: %s\n", req->version);
-		printf("user-agent is: %s\n", req->user_agent);
-		printf("language is: %s\n", req->accept_language);
-		printf("connection is: %s\n", req->connection);
-		printf("proxy connection is: %s\n", req->proxy_connection);
-		send_proxy_request(req);
+		print_req(req);
+		int proxyfd = send_proxy_request(req);
+		send_proxy_response(proxyfd, connfd);
 		destroy_request(req);
 		Close(connfd);
+		Close(proxyfd);
 	}
 }
 
