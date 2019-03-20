@@ -236,7 +236,7 @@ for file in ${BASIC_LIST}
 do
     numRun=`expr $numRun + 1`
     echo "${numRun}: ${file}"
-    clear_dirs
+    # clear_dirs
 
     # Fetch using the proxy
     echo "   Fetching ./tiny/${file} into ${PROXY_DIR} using the proxy"
