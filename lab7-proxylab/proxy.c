@@ -133,6 +133,13 @@ void doit(int fd) {
     destroy_request(req);
 }
 
+void *thread(void *vargp) {
+    int connfd = *((int*) vargp);
+    Pthread_detach(Pthread_self());
+    Free(vargp);
+    doit(connfd);
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         fprintf(stderr, "usage: %s <port>\n", argv[0]);
@@ -141,15 +148,40 @@ int main(int argc, char* argv[]) {
     char hostname[MAXBUF], port[MAXBUF];
     struct sockaddr_storage clientaddr;
     socklen_t clientlen;
-    int listenfd, connfd;
-    listenfd = Open_listenfd(argv[1]);
+    int listenfd, *connfdp;
+    pthread_t tid;
 
+    listenfd = Open_listenfd(argv[1]);
     while (1) {
         clientlen = sizeof(clientaddr);
-        connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
-        Getnameinfo((SA*)&clientaddr, clientlen, hostname, MAXBUF,
-                    port, MAXBUF, 0);
-        fprintf(stdout, "Accepted connection from (%s, %s)\n", hostname, port);
-        doit(connfd);
+        connfdp = Malloc(sizeof(int));
+        *connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
+        Pthread_create(&tid, NULL, thread, connfdp);
+//        Getnameinfo((SA*)&clientaddr, clientlen, hostname, MAXBUF,
+//                    port, MAXBUF, 0);
+//        fprintf(stdout, "Accepted connection from (%s, %s)\n", hostname, port);
+//        doit(connfd);
     }
 }
+
+
+//int main(int argc, char* argv[]) {
+//    if (argc != 2) {
+//        fprintf(stderr, "usage: %s <port>\n", argv[0]);
+//        exit(1);
+//    }
+//    char hostname[MAXBUF], port[MAXBUF];
+//    struct sockaddr_storage clientaddr;
+//    socklen_t clientlen;
+//    int listenfd, connfd;
+//    listenfd = Open_listenfd(argv[1]);
+//
+//    while (1) {
+//        clientlen = sizeof(clientaddr);
+//        connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
+//        Getnameinfo((SA*)&clientaddr, clientlen, hostname, MAXBUF,
+//                    port, MAXBUF, 0);
+//        fprintf(stdout, "Accepted connection from (%s, %s)\n", hostname, port);
+//        doit(connfd);
+//    }
+//}
