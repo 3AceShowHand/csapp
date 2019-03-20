@@ -8,13 +8,13 @@ thread:
 	movq	(%rdi), %rcx
 	testq	%rcx, %rcx
 	jle	.L2
-	movl	$0, %eax
+	movl	$0, %edx
 .L3:
-	movq	cnt(%rip), %rdx
-	addq	$1, %rdx
-	movq	%rdx, cnt(%rip)
+	movq	cnt(%rip), %rax
 	addq	$1, %rax
-	cmpq	%rcx, %rax
+	movq	%rax, cnt(%rip)
+	addq	$1, %rdx
+	cmpq	%rdx, %rcx
 	jne	.L3
 .L2:
 	movl	$0, %eax
@@ -37,56 +37,58 @@ main:
 	.cfi_startproc
 	subq	$40, %rsp
 	.cfi_def_cfa_offset 48
+	movq	%fs:40, %rax
+	movq	%rax, 24(%rsp)
+	xorl	%eax, %eax
 	cmpl	$2, %edi
-	je	.L5
+	je	.L6
 	movq	(%rsi), %rdx
 	movl	$.LC0, %esi
 	movl	$1, %edi
-	movl	$0, %eax
 	call	__printf_chk
 	movl	$0, %edi
 	call	exit
-.L5:
+.L6:
 	movq	8(%rsi), %rdi
 	movl	$10, %edx
 	movl	$0, %esi
 	call	strtol
 	cltq
-	movq	%rax, 8(%rsp)
-	leaq	8(%rsp), %rcx
+	movq	%rax, (%rsp)
+	movq	%rsp, %rcx
+	movl	$thread, %edx
+	movl	$0, %esi
+	leaq	8(%rsp), %rdi
+	call	Pthread_create
+	movq	%rsp, %rcx
 	movl	$thread, %edx
 	movl	$0, %esi
 	leaq	16(%rsp), %rdi
 	call	Pthread_create
-	leaq	8(%rsp), %rcx
-	movl	$thread, %edx
 	movl	$0, %esi
-	leaq	24(%rsp), %rdi
-	call	Pthread_create
+	movq	8(%rsp), %rdi
+	call	Pthread_join
 	movl	$0, %esi
 	movq	16(%rsp), %rdi
 	call	Pthread_join
-	movl	$0, %esi
-	movq	24(%rsp), %rdi
-	call	Pthread_join
 	movq	cnt(%rip), %rdx
-	movq	8(%rsp), %rax
+	movq	(%rsp), %rax
 	addq	%rax, %rax
 	cmpq	%rdx, %rax
-	je	.L6
+	je	.L7
 	movq	cnt(%rip), %rdx
 	movl	$.LC1, %esi
 	movl	$1, %edi
 	movl	$0, %eax
 	call	__printf_chk
-	jmp	.L7
-.L6:
+	jmp	.L8
+.L7:
 	movq	cnt(%rip), %rdx
 	movl	$.LC2, %esi
 	movl	$1, %edi
 	movl	$0, %eax
 	call	__printf_chk
-.L7:
+.L8:
 	movl	$0, %edi
 	call	exit
 	.cfi_endproc
@@ -99,5 +101,5 @@ main:
 	.size	cnt, 8
 cnt:
 	.zero	8
-	.ident	"GCC: (Ubuntu 4.8.1-2ubuntu1~12.04) 4.8.1"
+	.ident	"GCC: (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",@progbits

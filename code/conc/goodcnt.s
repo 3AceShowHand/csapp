@@ -26,7 +26,7 @@ thread:
 	movl	$mutex, %edi
 	call	V
 	addl	$1, %ebx
-	cmpl	%ebp, %ebx
+	cmpl	%ebx, %ebp
 	jne	.L3
 .L2:
 	movl	$0, %eax
@@ -55,60 +55,62 @@ main:
 	.cfi_startproc
 	subq	$40, %rsp
 	.cfi_def_cfa_offset 48
+	movq	%fs:40, %rax
+	movq	%rax, 24(%rsp)
+	xorl	%eax, %eax
 	cmpl	$2, %edi
-	je	.L6
+	je	.L7
 	movq	(%rsi), %rdx
 	movl	$.LC0, %esi
 	movl	$1, %edi
-	movl	$0, %eax
 	call	__printf_chk
 	movl	$0, %edi
 	call	exit
-.L6:
+.L7:
 	movq	8(%rsi), %rdi
 	movl	$10, %edx
 	movl	$0, %esi
 	call	strtol
-	movl	%eax, 12(%rsp)
+	movl	%eax, 4(%rsp)
 	movl	$1, %edx
 	movl	$0, %esi
 	movl	$mutex, %edi
 	call	Sem_init
-	leaq	12(%rsp), %rcx
+	leaq	4(%rsp), %rcx
+	movl	$thread, %edx
+	movl	$0, %esi
+	leaq	8(%rsp), %rdi
+	call	Pthread_create
+	leaq	4(%rsp), %rcx
 	movl	$thread, %edx
 	movl	$0, %esi
 	leaq	16(%rsp), %rdi
 	call	Pthread_create
-	leaq	12(%rsp), %rcx
-	movl	$thread, %edx
 	movl	$0, %esi
-	leaq	24(%rsp), %rdi
-	call	Pthread_create
+	movq	8(%rsp), %rdi
+	call	Pthread_join
 	movl	$0, %esi
 	movq	16(%rsp), %rdi
 	call	Pthread_join
-	movl	$0, %esi
-	movq	24(%rsp), %rdi
-	call	Pthread_join
-	movq	cnt(%rip), %rax
-	movl	12(%rsp), %ecx
-	leal	(%rcx,%rcx), %edx
-	movslq	%edx, %rdx
-	cmpq	%rax, %rdx
-	je	.L7
+	movq	cnt(%rip), %rdx
+	movl	4(%rsp), %eax
+	addl	%eax, %eax
+	cltq
+	cmpq	%rdx, %rax
+	je	.L8
 	movq	cnt(%rip), %rdx
 	movl	$.LC1, %esi
 	movl	$1, %edi
 	movl	$0, %eax
 	call	__printf_chk
-	jmp	.L8
-.L7:
+	jmp	.L9
+.L8:
 	movq	cnt(%rip), %rdx
 	movl	$.LC2, %esi
 	movl	$1, %edi
 	movl	$0, %eax
 	call	__printf_chk
-.L8:
+.L9:
 	movl	$0, %edi
 	call	exit
 	.cfi_endproc
@@ -122,5 +124,5 @@ main:
 	.size	cnt, 8
 cnt:
 	.zero	8
-	.ident	"GCC: (Ubuntu 4.8.1-2ubuntu1~12.04) 4.8.1"
+	.ident	"GCC: (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",@progbits
