@@ -74,13 +74,14 @@ int main(int argc, char* argv[]) {
 	pthread_t tid;
 
 	init_cache();
+
 	listenfd = Open_listenfd(argv[1]);
 	sbuf_init(&sbuf, SBUFSIZE);
 	clientlen = sizeof(clientaddr);
+
 	for (int i = 0; i < NTHREADS; i++) {
 		Pthread_create(&tid, NULL, thread, NULL);
 	}
-
 	while (1) {
 		connfd = Accept(listenfd, (SA*)&clientaddr, &clientlen);
 		Getnameinfo((SA*)&clientaddr, clientlen, hostname, MAXBUF,
@@ -104,12 +105,13 @@ void init_cache() {
  * find block in cache, by name (host/query)
  * return -1 on failed, else return the index of block
 */
-
 int find_cache(char* name, int nlen) {
 	P(&cache_mutex);
-	int i;
+	int i, length;
 	for (i = 0; i < 10; i++) {
-		if (strncmp(name, cache.buffer[i].name, nlen) == 0) {
+		length = strlen(cache.buffer[i].name);
+		if (length < nlen) length = nlen;
+		if (strncmp(name, cache.buffer[i].name, length) == 0) {
 			V(&cache_mutex);
 			return i;
 		}
@@ -245,7 +247,7 @@ void destroy_request(request* req) {
 */
 void send_request(int fd, request* req) {
 	char name[MAXBUF];
-	sprintf(name, "%s/%s", req->host, req->query);
+	sprintf(name, "%s%s", req->host, req->query);
 	int idx = find_cache(name, strlen(name));
 	if (idx != -1) {
 		fprintf(stdout, "find %s in cache\n", name);
@@ -256,7 +258,7 @@ void send_request(int fd, request* req) {
 		sprintf(buf, "%s %s %s\r\n", req->method, req->query, req->version);
 		sprintf(buf, "%sHost: %s\r\n", buf, req->host);
 		sprintf(buf, "%sConnection: %s\r\n", buf, req->connection);
-		sprintf(buf, "%sProxy Connetion: %s\r\n\r\n", buf, req->proxy_connection);
+		sprintf(buf, "%sProxy Connection: %s\r\n\r\n", buf, req->proxy_connection);
 
 		int proxyfd = Open_clientfd(req->host, req->port);
 		rio_t rio;
