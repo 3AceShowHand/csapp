@@ -137,7 +137,9 @@ NOTES:
  *   Max ops: 8
  *   Rating: 1
  */
-int bitAnd(int x, int y) { return ~(~x | ~y); }
+int bitAnd(int x, int y) { 
+    return ~(~x | ~y); 
+}
 
 /*
  * getByte - Extract byte n from word x
@@ -147,8 +149,7 @@ int bitAnd(int x, int y) { return ~(~x | ~y); }
  *   Max ops: 6
  *   Rating: 2
  */
-int getByte(int x, int n)
-{
+int getByte(int x, int n) {
     int move = n << 3;
     int mask = 0xff << move;
     return (x & mask) >> move & 0xff;
@@ -162,8 +163,7 @@ int getByte(int x, int n)
  *   Max ops: 20
  *   Rating: 3
  */
-int logicalShift(int x, int n)
-{
+int logicalShift(int x, int n) {
     int res = x >> n;
     int negative1 = (~1) + 1;
     int negativeN = (~n) + 1;
@@ -180,9 +180,7 @@ int logicalShift(int x, int n)
  *   Max ops: 40
  *   Rating: 4
  */
-int bitCount(int x)
-{
-<<<<<<< HEAD
+int bitCount(int x) {
     int mask1 = 0x5 | (0x5 << 4);
     mask1 = mask1 | (mask1 << 8);
     mask1 = mask1 | (mask1 << 16);
@@ -197,23 +195,6 @@ int bitCount(int x)
     int mask4 = 0xff | (0xff << 16);
 
     int mask5 = 0xff | (0xff << 8);
-=======
-    int mask1, mask2, mask3, mask4, mask5;
-    mask1 = 0x5 | (0x5 << 4);
-    mask1 = mask1 | (mask1 << 8);
-    mask1 = mask1 | (mask1 << 16);
-
-    mask2 = 0x3 | (0x3 << 4);
-    mask2 = mask2 | (mask2 << 8);
-    mask2 = mask2 | (mask2 << 16);
-
-    mask3 = 0xf | (0xf << 8);
-    mask3 = mask3 | (mask3 << 16);
-
-    mask4 = 0xff | (0xff << 16);
-
-    mask5 = 0xff | (0xff << 8);
->>>>>>> 0f45a4b953f0d30eeac707c98b55f55312c28c64
 
     x = (x & mask1) + ((x >> 1) & mask1);
     x = (x & mask2) + ((x >> 2) & mask2);
@@ -231,8 +212,7 @@ int bitCount(int x)
  *   Max ops: 12
  *   Rating: 4
  */
-int bang(int x)
-{
+int bang(int x) {
     int negativeX = (~x) + 1;
     int temp = x | negativeX;
     temp = temp >> 31;
@@ -245,7 +225,9 @@ int bang(int x)
  *   Max ops: 4
  *   Rating: 1
  */
-int tmin(void) { return 0x1 << 31; }
+int tmin(void) { 
+    return 0x1 << 31; 
+}
 
 /*
  * fitsBits - return 1 if x can be represented as an
@@ -256,8 +238,7 @@ int tmin(void) { return 0x1 << 31; }
  *   Max ops: 15
  *   Rating: 2
  */
-int fitsBits(int x, int n)
-{
+int fitsBits(int x, int n) {
     int move = 32 + (~n) + 1;
     int shifted = (x << move) >> move;
     int result = !(x ^ shifted);
@@ -272,21 +253,13 @@ int fitsBits(int x, int n)
  *   Max ops: 15
  *   Rating: 2
  */
-int divpwr2(int x, int n)
-{
-<<<<<<< HEAD
-    int sign = (x >> 31) & 0x1;
-    int shift = sign & n;
-    int shiftedX = x + shift;
-    int result = shiftedX >> n;
-    return result;
-=======
+
+int divpwr2(int x, int n) {
     int mask = x >> 31;
     int bias = (1 << n) + (~1 + 1);
     bias = bias & mask;
 
     return (x + bias) >> n;
->>>>>>> 0f45a4b953f0d30eeac707c98b55f55312c28c64
 }
 
 /*
@@ -296,7 +269,9 @@ int divpwr2(int x, int n)
  *   Max ops: 5
  *   Rating: 2
  */
-int negate(int x) { return ~x + 1; }
+int negate(int x) { 
+    return ~x + 1; 
+}
 
 /*
  * isPositive - return 1 if x > 0, return 0 otherwise
@@ -305,8 +280,7 @@ int negate(int x) { return ~x + 1; }
  *   Max ops: 8
  *   Rating: 3
  */
-int isPositive(int x)
-{
+int isPositive(int x) {
     int res = (x >> 31) + 1;
     int mask = !!x;
     return res & mask;
@@ -319,8 +293,7 @@ int isPositive(int x)
  *   Max ops: 24
  *   Rating: 3
  */
-int isLessOrEqual(int x, int y)
-{
+int isLessOrEqual(int x, int y) {
     int isEqual = !(x ^ y);
 
     int signX = (x >> 31) & 0x1;
@@ -346,8 +319,7 @@ int isLessOrEqual(int x, int y)
  *   Max ops: 90
  *   Rating: 4
  */
-int ilog2(int x)
-{
+int ilog2(int x) {
     int res = 0;
     res = res + ((!!(x >> 16) << 4));
     res = res + ((!!(x >> (8 + res))) << 3);
@@ -368,8 +340,7 @@ int ilog2(int x)
  *   Max ops: 10
  *   Rating: 2
  */
-unsigned float_neg(unsigned uf)
-{
+unsigned float_neg(unsigned uf) {
     int sign = uf & 0x80000000;
     int e = uf & 0x7f800000;
     int exp = e >> 23;
@@ -393,45 +364,41 @@ unsigned float_neg(unsigned uf)
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_i2f(int x)
-{
-    int sign, power, frac, lsb, ignored, exp;
+unsigned float_i2f(int x) {
     int threshold = 1 << 8;
-    unsigned result;
-    if (x == 0)
-    {
+    
+    if (x == 0) {
         return 0;
-    }
-    else if (x == 0x80000000)
-    {
+    } else if (x == 0x80000000) {
         return 0xcf000000;
     }
-    sign = (x >> 31) & 0x1;
-    if (sign)
-    {
+
+    int sign = (x >> 31) & 0x1;
+    if (sign) {
         x = -x;
     }
-    power = 31;
-    while ((x & 0x80000000) != 0x80000000)
-    {
+
+    int power = 31;
+    while ((x & 0x80000000) != 0x80000000) {
         power -= 1;
         x = x << 1;
     }
-    frac = x << 1;
-    ignored = frac & 0x000001ff;
+
+    int frac = x << 1;
+    int ignored = frac & 0x000001ff;
     frac = frac >> 9;
-    lsb = frac & 0x1;
-    if ((ignored > threshold) || ((ignored == threshold) && lsb == 1))
-    {
+    int lsb = frac & 0x1;
+    
+    if ((ignored > threshold) || ((ignored == threshold) && lsb == 1)) {
         frac += 1;
-        if (frac == 0)
-        {
+        if (frac == 0) {
             power += 1;
         }
     }
+
     frac = frac & 0x007fffff;
-    exp = (power + 127) << 23;
-    result = (sign << 31) + exp + frac;
+    int exp = (power + 127) << 23;
+    unsigned result = (sign << 31) + exp + frac;
     return result;
 }
 
