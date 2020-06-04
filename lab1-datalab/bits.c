@@ -137,8 +137,8 @@ NOTES:
  *   Max ops: 8
  *   Rating: 1
  */
-int bitAnd(int x, int y) { 
-    return ~(~x | ~y); 
+int bitAnd(int x, int y) {
+    return ~(~x | ~y);
 }
 
 /*
@@ -188,7 +188,7 @@ int bitCount(int x) {
     int mask2 = 0x3 | (0x3 << 4);
     mask2 = mask2 | (mask2 << 8);
     mask2 = mask2 | (mask2 << 16);
-    
+
     int mask3 = 0xf | (0xf << 8);
     mask3 = mask3 | (mask3 << 16);
 
@@ -225,8 +225,8 @@ int bang(int x) {
  *   Max ops: 4
  *   Rating: 1
  */
-int tmin(void) { 
-    return 0x1 << 31; 
+int tmin(void) {
+    return 0x1 << 31;
 }
 
 /*
@@ -244,6 +244,15 @@ int fitsBits(int x, int n) {
     int result = !(x ^ shifted);
     return result;
 }
+
+// int fitsBits(int x, int n) {
+//     int move = 32 + (~n) + 1;
+//     int shifted = (x << move);
+//     shifted = shifted >> move;
+//     int result = !(x ^ shifted);
+
+//     return result;
+// }
 
 /*
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -269,8 +278,8 @@ int divpwr2(int x, int n) {
  *   Max ops: 5
  *   Rating: 2
  */
-int negate(int x) { 
-    return ~x + 1; 
+int negate(int x) {
+    return ~x + 1;
 }
 
 /*
@@ -347,8 +356,7 @@ unsigned float_neg(unsigned uf) {
     int mantissa = uf & 0x007fffff;
     unsigned result;
 
-    if ((exp == 255) && (mantissa != 0))
-    {
+    if ((exp == 255) && (mantissa != 0)) {
         return uf;
     }
     result = (sign ^ 0x80000000) + e + mantissa;
@@ -366,7 +374,7 @@ unsigned float_neg(unsigned uf) {
  */
 unsigned float_i2f(int x) {
     int threshold = 1 << 8;
-    
+
     if (x == 0) {
         return 0;
     } else if (x == 0x80000000) {
@@ -388,7 +396,7 @@ unsigned float_i2f(int x) {
     int ignored = frac & 0x000001ff;
     frac = frac >> 9;
     int lsb = frac & 0x1;
-    
+
     if ((ignored > threshold) || ((ignored == threshold) && lsb == 1)) {
         frac += 1;
         if (frac == 0) {
@@ -413,43 +421,33 @@ unsigned float_i2f(int x) {
  *   Max ops: 30
  *   Rating: 4
  */
-unsigned float_twice(unsigned uf)
-{
+unsigned float_twice(unsigned uf) {
     int sign = uf & 0x80000000;
     int e = uf & 0x7f800000;
     int exp = e >> 23;
     int mantissa = uf & 0x007fffff;
     unsigned result;
     // special: 11111111
-    if (exp == 255)
-    {
+    if (exp == 255) {
         return uf;
     }
     // denormalized 00000000
-    else if (exp == 0)
-    {
+    else if (exp == 0) {
         // +0, -0
-        if (mantissa == 0)
-        {
+        if (mantissa == 0) {
             return uf;
-        }
-        else
-        {
+        } else {
             int upBound = 0x00400000;
-            if (mantissa != upBound)
-            {
+            if (mantissa != upBound) {
                 mantissa = mantissa << 1;
-            }
-            else
-            {
+            } else {
                 e = 0x01000000;
             }
             result = sign + e + mantissa;
         }
     }
     // normalized 00000001-11111110
-    else
-    {
+    else {
         exp = exp + 1;
         result = sign + (exp << 23) + mantissa;
     }
